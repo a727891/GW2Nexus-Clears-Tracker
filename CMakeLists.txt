@@ -46,6 +46,9 @@ set(SRC_FILES
     src/core/SettingsStore.cpp
     src/core/Types.cpp
     src/core/PanelVisibility.cpp
+    src/core/RaidVisibilityStore.cpp
+    src/core/StrikeVisibilityStore.cpp
+    src/core/EncounterVisibilityFilter.cpp
     src/data/StaticDataLoader.cpp
     src/data/RaidData.cpp
     src/data/StrikeData.cpp
@@ -59,6 +62,7 @@ set(SRC_FILES
     src/services/DailyBountyProgressService.cpp
     src/services/PriorityRotationService.cpp
     src/services/WeeklyBountyEncountersService.cpp
+    src/services/WeeklyModifierService.cpp
     src/services/StrikePersistance.cpp
     src/services/ResetsWatcher.cpp
     src/services/MapWatcherService.cpp
@@ -71,6 +75,7 @@ set(SRC_FILES
     src/ui/RaidPanel.cpp
     src/ui/StrikesPanel.cpp
     src/ui/OptionsPanel.cpp
+    src/ui/EncounterSelectionPanel.cpp
     src/ui/QuickAccessService.cpp
 )
 

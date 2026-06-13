@@ -1,6 +1,8 @@
 #pragma once
 
 #include "core/SettingsStore.h"
+#include "core/RaidVisibilityStore.h"
+#include "core/StrikeVisibilityStore.h"
 #include "data/DailyBountyData.h"
 #include "data/RaidData.h"
 #include "data/StrikeData.h"
@@ -37,6 +39,8 @@ public:
     std::string accountName;
 
     SettingsStore settings;
+    RaidVisibilityStore raidVisibility;
+    StrikeVisibilityStore strikeVisibility;
     RaidData raidData;
     StrikeData strikeData;
     DailyBountyData dailyBountyData;
@@ -70,6 +74,7 @@ public:
     void ProcessPendingStaticDataLoad();
     void RebuildRaidGroups();
     void RebuildStrikeGroups();
+    void SyncEncounterVisibility();
     void OnApiPoll();
     void ApplyRaidClears();
     void ApplyNonWeeklyHighlights();

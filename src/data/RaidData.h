@@ -28,6 +28,10 @@ struct RaidWing {
     std::string name;
     std::string abbreviation;
     int number = 0;
+    int callOfTheMistsTimestamp = 0;
+    int callOfTheMistsWeeks = 0;
+    int emboldenedTimestamp = 0;
+    int emboldenedWeeks = 0;
     std::vector<BossEncounter> encounters;
 };
 
@@ -40,11 +44,13 @@ struct ExpansionRaid {
 class RaidData {
 public:
     std::string version;
+    int secondsInWeek = 604800;
     std::vector<std::string> eventEncounterApiIds;
     std::vector<ExpansionRaid> expansions;
 
     static RaidData FromJson(const nlohmann::json& j);
     const BossEncounter* GetEncounterByApiId(const std::string& apiId) const;
+    const RaidWing* GetWingById(const std::string& wingId) const;
     bool IsEventEncounter(const std::string& apiId) const;
 };
 

@@ -59,6 +59,7 @@ BossEncounter BossEncounter::FromJson(const nlohmann::json& j, bool isStrike) {
 RaidData RaidData::FromJson(const nlohmann::json& j) {
     RaidData data;
     data.version = j.value("version", "");
+    data.secondsInWeek = j.value("secondsInWeek", 604800);
     if (j.contains("eventEncounterApiIds")) {
         for (const auto& id : j["eventEncounterApiIds"]) {
             data.eventEncounterApiIds.push_back(id.get<std::string>());
@@ -82,6 +83,10 @@ RaidData RaidData::FromJson(const nlohmann::json& j) {
             wing.name = wingJ.value("name", "");
             wing.abbreviation = wingJ.value("abbriviation", "");
             wing.number = wingJ.value("number", 0);
+            wing.callOfTheMistsTimestamp = wingJ.value("call_of_mists_timestamp", 0);
+            wing.callOfTheMistsWeeks = wingJ.value("call_of_mists_weeks", 0);
+            wing.emboldenedTimestamp = wingJ.value("emboldened_timestamp", 0);
+            wing.emboldenedWeeks = wingJ.value("emboldened_weeks", 0);
             if (wingJ.contains("encounters")) {
                 for (const auto& encJ : wingJ["encounters"]) {
                     wing.encounters.push_back(BossEncounter::FromJson(encJ, false));
@@ -100,6 +105,15 @@ const BossEncounter* RaidData::GetEncounterByApiId(const std::string& apiId) con
             for (const auto& enc : wing.encounters) {
                 if (enc.EncounterId() == apiId) return &enc;
             }
+        }
+    }
+    return nullptr;
+}
+
+const RaidWing* RaidData::GetWingById(const std::string& wingId) const {
+    for (const auto& exp : expansions) {
+        for (const auto& wing : exp.wings) {
+            if (wing.id == wingId) return &wing;
         }
     }
     return nullptr;

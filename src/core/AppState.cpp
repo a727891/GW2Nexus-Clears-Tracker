@@ -28,6 +28,9 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     settings.Load(settingsPath);
     gw2Api.SetApiKey(settings.apiKey);
 
+    raidVisibility.Load((std::filesystem::path(addonDir) / "raid_settings.json").string());
+    strikeVisibility.Load((std::filesystem::path(addonDir) / "strike_settings.json").string());
+
     rc::UiFontService::Initialize(api, nexusLink);
     rc::GridMaskService::Initialize(api, addonDir);
 
@@ -71,6 +74,8 @@ void AppState::Shutdown() {
     }
     const auto settingsPath = (std::filesystem::path(addonDir) / "settings.json").string();
     settings.Save(settingsPath);
+    raidVisibility.Save((std::filesystem::path(addonDir) / "raid_settings.json").string());
+    strikeVisibility.Save((std::filesystem::path(addonDir) / "strike_settings.json").string());
     const auto strikePersistPath =
         (std::filesystem::path(addonDir) / "clearsTracker" / "strike_clears.json").string();
     strikePersist.Save(strikePersistPath);
@@ -99,6 +104,7 @@ void AppState::LoadStaticDataWithNetwork() {
         weeklyBountyEncounters.Rebuild(dailyBountyData, resets);
         RebuildRaidGroups();
         RebuildStrikeGroups();
+        SyncEncounterVisibility();
         if (api) api->Log(LOGL_INFO, "NexusRaidClears", "Downloaded static data.");
     } catch (...) {
         if (api) api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse static JSON data.");
@@ -120,6 +126,7 @@ bool AppState::LoadStaticDataFromCache() {
         weeklyBountyEncounters.Rebuild(dailyBountyData, resets);
         RebuildRaidGroups();
         RebuildStrikeGroups();
+        SyncEncounterVisibility();
         return true;
     } catch (...) {
         if (api) api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse cached static JSON.");
@@ -209,6 +216,11 @@ void AppState::RebuildStrikeGroups() {
             DailyBountyService::GetDailyBounties(dailyBountyData, raidData, strikeData, 1);
         strikeGroups.push_back(std::move(tomorrow));
     }
+}
+
+void AppState::SyncEncounterVisibility() {
+    raidVisibility.InitializeFromData(raidData);
+    strikeVisibility.InitializeFromData(strikeData);
 }
 
 void AppState::RequestApiRefresh() {

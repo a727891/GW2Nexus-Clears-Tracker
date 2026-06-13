@@ -2,6 +2,7 @@
 
 #include "core/SettingsStore.h"
 #include "core/Types.h"
+#include "data/RaidData.h"
 
 #include <imgui.h>
 #include <vector>
@@ -15,7 +16,8 @@ namespace GridRenderer {
                       const SettingsStore& settings,
                       bool colorClears,
                       bool useNonWeeklyHighlight = false,
-                      ImFont* font = nullptr);
+                      ImFont* font = nullptr,
+                      const RaidData* raidData = nullptr);
 }
 
 }  // namespace rc

@@ -76,12 +76,18 @@ void SettingsStore::Load(const std::string& path) {
     if (j.contains("organicGridBoxBackgrounds")) {
         organicGridBoxBackgrounds = j["organicGridBoxBackgrounds"].get<bool>();
     }
+    if (j.contains("panelScale")) panelScale = j["panelScale"].get<float>();
+    if (j.contains("highlightEmbolden")) highlightEmbolden = j["highlightEmbolden"].get<bool>();
+    if (j.contains("highlightCotm")) highlightCotm = j["highlightCotm"].get<bool>();
+    if (j.contains("colorText")) colorText = ColorFromJson(j["colorText"], colorText);
     if (j.contains("colorCleared")) colorCleared = ColorFromJson(j["colorCleared"], colorCleared);
     if (j.contains("colorNotCleared")) colorNotCleared = ColorFromJson(j["colorNotCleared"], colorNotCleared);
     if (j.contains("colorUnknown")) colorUnknown = ColorFromJson(j["colorUnknown"], colorUnknown);
     if (j.contains("colorNonWeeklyBounty")) {
         colorNonWeeklyBounty = ColorFromJson(j["colorNonWeeklyBounty"], colorNonWeeklyBounty);
     }
+    if (j.contains("colorEmbolden")) colorEmbolden = ColorFromJson(j["colorEmbolden"], colorEmbolden);
+    if (j.contains("colorCotm")) colorCotm = ColorFromJson(j["colorCotm"], colorCotm);
 }
 
 void SettingsStore::Save(const std::string& path) const {
@@ -98,10 +104,16 @@ void SettingsStore::Save(const std::string& path) const {
         {"omitEventEncounters", omitEventEncounters},
         {"anchorStrikesToRaidPanel", anchorStrikesToRaidPanel},
         {"organicGridBoxBackgrounds", organicGridBoxBackgrounds},
+        {"panelScale", panelScale},
+        {"highlightEmbolden", highlightEmbolden},
+        {"highlightCotm", highlightCotm},
+        {"colorText", ColorToJson(colorText)},
         {"colorCleared", ColorToJson(colorCleared)},
         {"colorNotCleared", ColorToJson(colorNotCleared)},
         {"colorUnknown", ColorToJson(colorUnknown)},
         {"colorNonWeeklyBounty", ColorToJson(colorNonWeeklyBounty)},
+        {"colorEmbolden", ColorToJson(colorEmbolden)},
+        {"colorCotm", ColorToJson(colorCotm)},
     };
 
     std::filesystem::path p(path);

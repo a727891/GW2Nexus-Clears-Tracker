@@ -38,7 +38,10 @@ struct PanelPlacement {
     std::vector<GroupPlacement> groups;
 };
 
-PanelPlacement ComputePlacement(const std::vector<GridGroup>& groups, PanelLayout layout);
+PanelPlacement ComputePlacement(const std::vector<GridGroup>& groups, PanelLayout layout,
+                                float scale = 1.0f);
+
+inline float Scaled(float value, float scale) { return value * scale; }
 
 }  // namespace GridLayout
 }  // namespace rc
