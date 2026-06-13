@@ -41,10 +41,6 @@ void AddonLoad(AddonAPI_t* api) {
 
     api->GUI_Register(RT_Render, AddonRender);
     api->GUI_Register(RT_OptionsRender, AddonOptions);
-    api->GUI_RegisterCloseOnEscape("Raid Clears", &state.settings.raidPanel.visible);
-    api->GUI_RegisterCloseOnEscape("Strike Clears", &state.settings.strikesPanel.visible);
-    api->GUI_RegisterCloseOnEscape("Fractal Clears", &state.settings.fractalsPanel.visible);
-    api->GUI_RegisterCloseOnEscape("Dungeon Clears", &state.settings.dungeonsPanel.visible);
 
     api->InputBinds_RegisterWithString(kTogglePanels, OnTogglePanels, "ALT+SHIFT+R");
 
