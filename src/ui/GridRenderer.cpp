@@ -36,6 +36,22 @@ void DrawTextAt(ImDrawList* draw,
     draw->AddText(pos, color, text);
 }
 
+void DrawBoldTextAt(ImDrawList* draw,
+                    const ImVec2& pos,
+                    ImU32 color,
+                    const char* text,
+                    ImFont* font,
+                    float fontSize) {
+    const float boldOffset = fontSize >= 14.0f ? 1.0f : 0.5f;
+    if (font) {
+        draw->AddText(font, fontSize, ImVec2(pos.x + boldOffset, pos.y), color, text);
+        draw->AddText(font, fontSize, pos, color, text);
+        return;
+    }
+    draw->AddText(ImVec2(pos.x + boldOffset, pos.y), color, text);
+    draw->AddText(pos, color, text);
+}
+
 uint32_t ColorForState(const EncounterCell& cell,
                        const SettingsStore& settings,
                        bool colorClears,
@@ -118,7 +134,7 @@ void DrawEncounterCellAt(const ImVec2& p0,
     const ImVec2 textSize = MeasureText(label, font, fontSize);
     const ImVec2 textPos(p0.x + (width - textSize.x) * 0.5f,
                          p0.y + (cellHeight - textSize.y) * 0.5f);
-    DrawTextAt(draw, textPos, textColor, label, font, fontSize);
+    DrawBoldTextAt(draw, textPos, textColor, label, font, fontSize);
 
     if (ImGui::IsMouseHoveringRect(p0, p1)) {
         ImGui::SetTooltip("%s", cell.name.c_str());

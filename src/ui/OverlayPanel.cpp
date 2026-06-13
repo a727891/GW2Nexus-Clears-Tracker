@@ -7,7 +7,7 @@ namespace OverlayPanel {
 
 namespace {
 
-constexpr ImGuiWindowFlags kOverlayFlags =
+constexpr ImGuiWindowFlags kOverlayBaseFlags =
     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration |
     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize |
     ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
@@ -15,6 +15,7 @@ constexpr ImGuiWindowFlags kOverlayFlags =
 
 WindowState* g_windowState = nullptr;
 PanelRole g_activeRole = PanelRole::Raid;
+bool g_lockPosition = false;
 int g_styleVarCount = 0;
 bool g_raidDragging = false;
 bool g_strikesDragging = false;
@@ -43,10 +44,12 @@ DragState& DragFor(PanelRole role) {
 
 }  // namespace
 
-bool Begin(const char* id, WindowState& state, ImVec2 contentSize, PanelRole role) {
+bool Begin(const char* id, WindowState& state, ImVec2 contentSize, PanelRole role,
+           bool lockPosition) {
     (void)contentSize;
     g_windowState = &state;
     g_activeRole = role;
+    g_lockPosition = lockPosition;
 
     ImGui::SetNextWindowPos(SnapPos(ImVec2(state.posX, state.posY)), ImGuiCond_Always);
 
@@ -54,7 +57,12 @@ bool Begin(const char* id, WindowState& state, ImVec2 contentSize, PanelRole rol
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     g_styleVarCount = 2;
 
-    if (!ImGui::Begin(id, nullptr, kOverlayFlags)) {
+    ImGuiWindowFlags flags = kOverlayBaseFlags;
+    if (lockPosition) {
+        flags |= ImGuiWindowFlags_NoInputs;
+    }
+
+    if (!ImGui::Begin(id, nullptr, flags)) {
         ImGui::End();
         ImGui::PopStyleVar(g_styleVarCount);
         g_styleVarCount = 0;
@@ -69,20 +77,25 @@ bool End(PanelRole role) {
     bool dragged = false;
     if (g_windowState) {
         DragState& drag = DragFor(role);
-        const bool hovered =
-            ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
 
-        if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            drag.active = true;
-            drag.grabOffset = Subtract(ImGui::GetMousePos(), ImGui::GetWindowPos());
-        }
-
-        if (drag.active && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-            const ImVec2 newPos = SnapPos(Subtract(ImGui::GetMousePos(), drag.grabOffset));
-            ImGui::SetWindowPos(newPos);
-            dragged = true;
-        } else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        if (g_lockPosition) {
             drag.active = false;
+        } else {
+            const bool hovered =
+                ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
+
+            if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                drag.active = true;
+                drag.grabOffset = Subtract(ImGui::GetMousePos(), ImGui::GetWindowPos());
+            }
+
+            if (drag.active && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                const ImVec2 newPos = SnapPos(Subtract(ImGui::GetMousePos(), drag.grabOffset));
+                ImGui::SetWindowPos(newPos);
+                dragged = true;
+            } else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                drag.active = false;
+            }
         }
 
         const ImVec2 pos = SnapPos(ImGui::GetWindowPos());

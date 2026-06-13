@@ -24,6 +24,7 @@ public:
     bool omitEventEncounters = true;
     bool anchorStrikesToRaidPanel = false;
     bool organicGridBoxBackgrounds = true;
+    bool lockPanelPosition = false;
 
     bool highlightEmbolden = true;
     bool highlightCotm = true;

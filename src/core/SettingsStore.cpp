@@ -76,6 +76,9 @@ void SettingsStore::Load(const std::string& path) {
     if (j.contains("organicGridBoxBackgrounds")) {
         organicGridBoxBackgrounds = j["organicGridBoxBackgrounds"].get<bool>();
     }
+    if (j.contains("lockPanelPosition")) {
+        lockPanelPosition = j["lockPanelPosition"].get<bool>();
+    }
     if (j.contains("panelScale")) panelScale = j["panelScale"].get<float>();
     if (j.contains("highlightEmbolden")) highlightEmbolden = j["highlightEmbolden"].get<bool>();
     if (j.contains("highlightCotm")) highlightCotm = j["highlightCotm"].get<bool>();
@@ -104,6 +107,7 @@ void SettingsStore::Save(const std::string& path) const {
         {"omitEventEncounters", omitEventEncounters},
         {"anchorStrikesToRaidPanel", anchorStrikesToRaidPanel},
         {"organicGridBoxBackgrounds", organicGridBoxBackgrounds},
+        {"lockPanelPosition", lockPanelPosition},
         {"panelScale", panelScale},
         {"highlightEmbolden", highlightEmbolden},
         {"highlightCotm", highlightCotm},

@@ -31,7 +31,8 @@ void Render(AppState& state) {
     }
 
     if (!OverlayPanel::Begin("Strike Clears", state.settings.strikesPanel,
-                             strikePlacement.contentSize, OverlayPanel::PanelRole::Strikes)) {
+                             strikePlacement.contentSize, OverlayPanel::PanelRole::Strikes,
+                             state.settings.lockPanelPosition)) {
         return;
     }
 

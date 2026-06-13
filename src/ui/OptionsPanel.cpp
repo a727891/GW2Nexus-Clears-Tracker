@@ -110,6 +110,13 @@ void Render(AppState& state) {
             "Off: cells use plain rectangles.");
     }
 
+    ImGui::Checkbox("Lock panel position", &state.settings.lockPanelPosition);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Prevents dragging raid and strike panels. While locked, mouse input passes through "
+            "the panels to the game. Tooltips still appear when hovering encounter cells.");
+    }
+
     float panelScale = state.settings.panelScale;
     if (ImGui::SliderFloat("Panel scale", &panelScale, 0.5f, 2.0f, "%.2f")) {
         state.settings.panelScale = panelScale;

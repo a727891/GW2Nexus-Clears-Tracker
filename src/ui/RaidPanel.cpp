@@ -21,7 +21,7 @@ void Render(AppState& state) {
     const auto placement = GridLayout::ComputePlacement(visibleGroups, state.settings.panelLayout,
                                                         state.settings.panelScale);
     if (!OverlayPanel::Begin("Raid Clears", state.settings.raidPanel, placement.contentSize,
-                             OverlayPanel::PanelRole::Raid)) {
+                             OverlayPanel::PanelRole::Raid, state.settings.lockPanelPosition)) {
         return;
     }
 
