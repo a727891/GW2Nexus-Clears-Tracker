@@ -65,6 +65,7 @@ set(SRC_FILES
     src/ui/GridLayout.cpp
     src/ui/GridRenderer.cpp
     src/ui/OverlayPanel.cpp
+    src/ui/GridMaskService.cpp
     src/ui/UiFontService.cpp
     src/ui/PanelAnchor.cpp
     src/ui/RaidPanel.cpp

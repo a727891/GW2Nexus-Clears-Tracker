@@ -73,6 +73,9 @@ void SettingsStore::Load(const std::string& path) {
     if (j.contains("anchorStrikesToRaidPanel")) {
         anchorStrikesToRaidPanel = j["anchorStrikesToRaidPanel"].get<bool>();
     }
+    if (j.contains("organicGridBoxBackgrounds")) {
+        organicGridBoxBackgrounds = j["organicGridBoxBackgrounds"].get<bool>();
+    }
     if (j.contains("colorCleared")) colorCleared = ColorFromJson(j["colorCleared"], colorCleared);
     if (j.contains("colorNotCleared")) colorNotCleared = ColorFromJson(j["colorNotCleared"], colorNotCleared);
     if (j.contains("colorUnknown")) colorUnknown = ColorFromJson(j["colorUnknown"], colorUnknown);
@@ -94,6 +97,7 @@ void SettingsStore::Save(const std::string& path) const {
         {"highlightNonWeeklyBounty", highlightNonWeeklyBounty},
         {"omitEventEncounters", omitEventEncounters},
         {"anchorStrikesToRaidPanel", anchorStrikesToRaidPanel},
+        {"organicGridBoxBackgrounds", organicGridBoxBackgrounds},
         {"colorCleared", ColorToJson(colorCleared)},
         {"colorNotCleared", ColorToJson(colorNotCleared)},
         {"colorUnknown", ColorToJson(colorUnknown)},

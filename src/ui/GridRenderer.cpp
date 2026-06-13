@@ -1,6 +1,7 @@
 #include "ui/GridRenderer.h"
 
 #include "ui/GridLayout.h"
+#include "ui/GridMaskService.h"
 
 #include <imgui.h>
 
@@ -44,19 +45,45 @@ uint32_t ColorForState(const EncounterCell& cell,
     return settings.colorNotCleared.ToImU32(0.85f);
 }
 
+void DrawCellBackground(ImDrawList* draw,
+                        const ImVec2& p0,
+                        float width,
+                        float height,
+                        uint32_t fillColor,
+                        bool organic,
+                        uint32_t styleSeed) {
+    const ImVec2 baseP1(p0.x + width, p0.y + height);
+    if (organic && GridMaskService::HasMasks()) {
+        const auto style = GridMaskService::StyleForSeed(styleSeed);
+        const ImVec2 drawP0(p0.x + style.xOffset, p0.y + style.yOffset);
+        const ImVec2 drawP1(baseP1.x + style.widthDelta, baseP1.y + style.heightDelta);
+        draw->AddImage(style.texture, drawP0, drawP1, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f),
+                       fillColor);
+        return;
+    }
+
+    draw->AddRectFilled(p0, baseP1, fillColor);
+    draw->AddRect(p0, baseP1, IM_COL32(0, 0, 0, 180));
+}
+
 void DrawEncounterCellAt(const ImVec2& p0,
                          float width,
                          const EncounterCell& cell,
+                         const GridGroup& group,
                          const SettingsStore& settings,
                          bool colorClears,
                          bool useNonWeeklyHighlight,
                          ImFont* font) {
-    const ImVec2 p1(p0.x + width, p0.y + GridLayout::kCellHeight);
     ImDrawList* draw = ImGui::GetWindowDrawList();
-    draw->AddRectFilled(p0, p1,
-                        ColorForState(cell, settings, colorClears, useNonWeeklyHighlight));
-    draw->AddRect(p0, p1, IM_COL32(0, 0, 0, 180));
+    const bool applyColors = colorClears && !group.isTomorrowBounty;
+    const uint32_t fillColor =
+        ColorForState(cell, settings, applyColors, useNonWeeklyHighlight);
+    const uint32_t styleSeed =
+        GridMaskService::HashSeed(group.id, cell.id.empty() ? cell.name : cell.id);
+    DrawCellBackground(draw, p0, width, GridLayout::kCellHeight, fillColor,
+                       settings.organicGridBoxBackgrounds, styleSeed);
 
+    const ImVec2 p1(p0.x + width, p0.y + GridLayout::kCellHeight);
     const char* label = cell.abbreviation.empty() ? cell.name.c_str() : cell.abbreviation.c_str();
     const ImVec2 textSize = MeasureText(label, font);
     const ImVec2 textPos(p0.x + (width - textSize.x) * 0.5f,
@@ -72,13 +99,16 @@ void DrawLabelCellAt(const ImVec2& p0,
                      float width,
                      const char* abbreviation,
                      const char* tooltip,
+                     const std::string& groupId,
                      GridLayout::LabelAlign align,
+                     const SettingsStore& settings,
                      ImFont* font) {
-    const ImVec2 p1(p0.x + width, p0.y + GridLayout::kCellHeight);
     ImDrawList* draw = ImGui::GetWindowDrawList();
-    draw->AddRectFilled(p0, p1, IM_COL32(40, 40, 40, 220));
-    draw->AddRect(p0, p1, IM_COL32(0, 0, 0, 180));
+    const uint32_t styleSeed = GridMaskService::HashSeed(groupId);
+    DrawCellBackground(draw, p0, width, GridLayout::kCellHeight, IM_COL32(40, 40, 40, 220),
+                       settings.organicGridBoxBackgrounds, styleSeed);
 
+    const ImVec2 p1(p0.x + width, p0.y + GridLayout::kCellHeight);
     const ImVec2 textSize = MeasureText(abbreviation, font);
     float textX = p0.x + (width - textSize.x) * 0.5f;
     if (align == GridLayout::LabelAlign::Right) {
@@ -100,17 +130,16 @@ void DrawGroupAt(const ImVec2& contentOrigin,
                  ImFont* font) {
     const char* wingLabel =
         group.abbreviation.empty() ? group.name.c_str() : group.abbreviation.c_str();
-    const bool applyColors = colorClears && !group.isTomorrowBounty;
 
     for (const auto& cell : placement.cells) {
         const ImVec2 p0(contentOrigin.x + placement.origin.x + cell.position.x,
                         contentOrigin.y + placement.origin.y + cell.position.y);
         if (cell.isLabel) {
-            DrawLabelCellAt(p0, cell.width, wingLabel, group.name.c_str(), placement.labelAlign,
-                            font);
+            DrawLabelCellAt(p0, cell.width, wingLabel, group.name.c_str(), group.id,
+                            placement.labelAlign, settings, font);
         } else if (cell.encounterIndex < group.encounters.size()) {
-            DrawEncounterCellAt(p0, cell.width, group.encounters[cell.encounterIndex], settings,
-                                applyColors, useNonWeeklyHighlight, font);
+            DrawEncounterCellAt(p0, cell.width, group.encounters[cell.encounterIndex], group,
+                                settings, colorClears, useNonWeeklyHighlight, font);
         }
     }
 }

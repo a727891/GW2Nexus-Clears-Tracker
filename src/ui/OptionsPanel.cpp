@@ -95,6 +95,13 @@ void Render(AppState& state) {
         state.ApplyNonWeeklyHighlights();
     }
 
+    ImGui::Checkbox("GW2 style background boxes", &state.settings.organicGridBoxBackgrounds);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "On: cells use organic mask textures similar to GW2 UI.\n"
+            "Off: cells use plain rectangles.");
+    }
+
     int pollMinutes = state.settings.pollIntervalMinutes;
     if (ImGui::SliderInt("API Poll Interval (min)", &pollMinutes, 1, 30)) {
         state.settings.pollIntervalMinutes = pollMinutes;

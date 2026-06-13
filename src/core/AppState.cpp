@@ -4,6 +4,7 @@
 #include "services/DailyBountyService.h"
 #include "services/RaidClearsService.h"
 #include "services/StrikeClearsService.h"
+#include "ui/GridMaskService.h"
 #include "ui/UiFontService.h"
 
 #include <filesystem>
@@ -28,6 +29,7 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     gw2Api.SetApiKey(settings.apiKey);
 
     rc::UiFontService::Initialize(api, nexusLink);
+    rc::GridMaskService::Initialize(api, addonDir);
 
     apiPoll.SetIntervalMinutes(settings.pollIntervalMinutes);
     apiPoll.SetCallback([this]() { RequestApiRefresh(); });

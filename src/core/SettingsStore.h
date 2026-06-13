@@ -22,6 +22,7 @@ public:
     bool highlightNonWeeklyBounty = true;
     bool omitEventEncounters = true;
     bool anchorStrikesToRaidPanel = false;
+    bool organicGridBoxBackgrounds = true;
 
     ColorRGB colorCleared{0, 255, 0};
     ColorRGB colorNotCleared{200, 200, 200};
