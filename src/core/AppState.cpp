@@ -38,9 +38,11 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
         strikeClearsSet.clear();
         for (const auto& id : cleared) strikeClearsSet.insert(id);
         ApplyStrikeClears();
+        ApplyNonWeeklyHighlights();
     });
 
     trackedDailyReset_ = resets.LastDailyReset();
+    trackedWeeklyReset_ = resets.LastWeeklyReset();
 
     if (LoadStaticDataFromCache()) {
         if (api) api->Log(LOGL_INFO, "NexusRaidClears", "Loaded static data from cache.");
@@ -86,6 +88,7 @@ void AppState::LoadStaticDataWithNetwork() {
         strikeData = StrikeData::FromJson(nlohmann::json::parse(strikeJson));
         dailyBountyData = DailyBountyData::FromJson(nlohmann::json::parse(bountyJson));
         staticDataReady = true;
+        weeklyBountyEncounters.Rebuild(dailyBountyData, resets);
         RebuildRaidGroups();
         RebuildStrikeGroups();
         if (api) api->Log(LOGL_INFO, "NexusRaidClears", "Downloaded static data.");
@@ -106,6 +109,7 @@ bool AppState::LoadStaticDataFromCache() {
         strikeData = StrikeData::FromJson(nlohmann::json::parse(strikeJson));
         dailyBountyData = DailyBountyData::FromJson(nlohmann::json::parse(bountyJson));
         staticDataReady = true;
+        weeklyBountyEncounters.Rebuild(dailyBountyData, resets);
         RebuildRaidGroups();
         RebuildStrikeGroups();
         return true;
@@ -222,6 +226,7 @@ void AppState::OnApiPoll() {
         std::lock_guard lock(dataMutex);
         raidClearsSet = std::move(*clears);
         ApplyRaidClears();
+        ApplyNonWeeklyHighlights();
     }
 
     StrikeClearsService::RefreshFromApi(strikeData, accountName, gw2Api, strikePersist);
@@ -240,6 +245,32 @@ void AppState::OnApiPoll() {
 
 void AppState::ApplyRaidClears() {
     RaidClearsService::ApplyClears(raidGroups, raidClearsSet);
+}
+
+void AppState::ApplyNonWeeklyHighlights() {
+    for (auto& group : raidGroups) {
+        for (auto& enc : group.encounters) {
+            enc.highlightNonWeeklyBounty = false;
+            if (enc.state == ClearState::Cleared) continue;
+            if (!settings.highlightNonWeeklyBounty) continue;
+            if (settings.omitEventEncounters && raidData.IsEventEncounter(enc.id)) continue;
+            if (!weeklyBountyEncounters.IsWeeklyBounty(enc.id)) {
+                enc.highlightNonWeeklyBounty = true;
+            }
+        }
+    }
+
+    for (auto& group : strikeGroups) {
+        if (group.isDailyBounty || group.isTomorrowBounty) continue;
+        for (auto& enc : group.encounters) {
+            enc.highlightNonWeeklyBounty = false;
+            if (enc.state == ClearState::Cleared) continue;
+            if (!settings.highlightNonWeeklyBounty) continue;
+            if (!weeklyBountyEncounters.IsWeeklyBounty(enc.id)) {
+                enc.highlightNonWeeklyBounty = true;
+            }
+        }
+    }
 }
 
 void AppState::ApplyStrikeClears() {
@@ -278,11 +309,20 @@ bool AppState::ShouldShowPanel(bool panelVisible) const {
 
 void AppState::TickResets() {
     resets.Update();
+    if (resets.LastWeeklyReset() != trackedWeeklyReset_) {
+        trackedWeeklyReset_ = resets.LastWeeklyReset();
+        weeklyBountyEncounters.Rebuild(dailyBountyData, resets);
+        std::lock_guard lock(dataMutex);
+        ApplyNonWeeklyHighlights();
+    }
     if (resets.LastDailyReset() != trackedDailyReset_) {
         trackedDailyReset_ = resets.LastDailyReset();
+        weeklyBountyEncounters.Rebuild(dailyBountyData, resets);
+        std::lock_guard lock(dataMutex);
         RebuildStrikeGroups();
         ApplyStrikeClears();
         ApplyDailyBountyClears();
+        ApplyNonWeeklyHighlights();
     }
 }
 

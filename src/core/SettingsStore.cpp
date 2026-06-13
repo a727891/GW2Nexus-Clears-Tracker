@@ -46,9 +46,36 @@ void SettingsStore::Load(const std::string& path) {
     if (j.contains("pollIntervalMinutes")) pollIntervalMinutes = j["pollIntervalMinutes"].get<int>();
     if (j.contains("raidPanel")) raidPanel = WindowFromJson(j["raidPanel"], raidPanel);
     if (j.contains("strikesPanel")) strikesPanel = WindowFromJson(j["strikesPanel"], strikesPanel);
+    if (j.contains("panelLayout")) {
+        const auto value = j["panelLayout"].get<std::string>();
+        if (value == "Horizontal") {
+            panelLayout = PanelLayout::Horizontal;
+        } else {
+            panelLayout = PanelLayout::Vertical;
+        }
+    }
+    if (j.contains("keybindToggleRaids")) {
+        keybindToggleRaids = j["keybindToggleRaids"].get<bool>();
+    }
+    if (j.contains("keybindToggleStrikes")) {
+        keybindToggleStrikes = j["keybindToggleStrikes"].get<bool>();
+    }
+    if (!j.contains("keybindToggleRaids") && !j.contains("keybindToggleStrikes") &&
+        j.contains("keybindTogglesBothPanels") && j["keybindTogglesBothPanels"].get<bool>()) {
+        keybindToggleRaids = true;
+        keybindToggleStrikes = true;
+    }
+    if (j.contains("cornerIconEnabled")) cornerIconEnabled = j["cornerIconEnabled"].get<bool>();
+    if (j.contains("highlightNonWeeklyBounty")) {
+        highlightNonWeeklyBounty = j["highlightNonWeeklyBounty"].get<bool>();
+    }
+    if (j.contains("omitEventEncounters")) omitEventEncounters = j["omitEventEncounters"].get<bool>();
     if (j.contains("colorCleared")) colorCleared = ColorFromJson(j["colorCleared"], colorCleared);
     if (j.contains("colorNotCleared")) colorNotCleared = ColorFromJson(j["colorNotCleared"], colorNotCleared);
     if (j.contains("colorUnknown")) colorUnknown = ColorFromJson(j["colorUnknown"], colorUnknown);
+    if (j.contains("colorNonWeeklyBounty")) {
+        colorNonWeeklyBounty = ColorFromJson(j["colorNonWeeklyBounty"], colorNonWeeklyBounty);
+    }
 }
 
 void SettingsStore::Save(const std::string& path) const {
@@ -57,9 +84,16 @@ void SettingsStore::Save(const std::string& path) const {
         {"pollIntervalMinutes", pollIntervalMinutes},
         {"raidPanel", WindowToJson(raidPanel)},
         {"strikesPanel", WindowToJson(strikesPanel)},
+        {"panelLayout", panelLayout == PanelLayout::Horizontal ? "Horizontal" : "Vertical"},
+        {"keybindToggleRaids", keybindToggleRaids},
+        {"keybindToggleStrikes", keybindToggleStrikes},
+        {"cornerIconEnabled", cornerIconEnabled},
+        {"highlightNonWeeklyBounty", highlightNonWeeklyBounty},
+        {"omitEventEncounters", omitEventEncounters},
         {"colorCleared", ColorToJson(colorCleared)},
         {"colorNotCleared", ColorToJson(colorNotCleared)},
         {"colorUnknown", ColorToJson(colorUnknown)},
+        {"colorNonWeeklyBounty", ColorToJson(colorNonWeeklyBounty)},
     };
 
     std::filesystem::path p(path);

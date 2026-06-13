@@ -12,6 +12,7 @@
 #include "services/ResetsWatcher.h"
 #include "services/StrikeClearsService.h"
 #include "services/StrikePersistance.h"
+#include "services/WeeklyBountyEncountersService.h"
 
 #include "mumble/Mumble.h"
 #include "nexus/Nexus.h"
@@ -44,8 +45,10 @@ public:
     ApiPollService apiPoll;
     ResetsWatcher resets;
     std::chrono::system_clock::time_point trackedDailyReset_;
+    std::chrono::system_clock::time_point trackedWeeklyReset_;
     StrikePersistance strikePersist;
     DailyBountyProgressService dailyBountyProgress;
+    WeeklyBountyEncountersService weeklyBountyEncounters;
     MapWatcherService mapWatcher;
 
     std::vector<GridGroup> raidGroups;
@@ -69,6 +72,7 @@ public:
     void RebuildStrikeGroups();
     void OnApiPoll();
     void ApplyRaidClears();
+    void ApplyNonWeeklyHighlights();
     void ApplyStrikeClears();
     void ApplyDailyBountyClears();
     bool ShouldShowPanel(bool panelVisible) const;

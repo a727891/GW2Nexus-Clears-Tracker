@@ -1,10 +1,11 @@
 #include "core/AppState.h"
-#include "ui/RaidPanel.h"
+#include "core/PanelVisibility.h"
+#include "ui/QuickAccessService.h"
 
-#include "imgui.h"
+#include <imgui.h>
 #include "mumble/Mumble.h"
 #include "nexus/Nexus.h"
-
+#include "ui/RaidPanel.h"
 #include <windows.h>
 
 namespace {
@@ -12,19 +13,16 @@ namespace {
 AddonAPI_t* g_api = nullptr;
 float g_lastFrameTime = 0.0f;
 
+constexpr const char* kTogglePanels = "NRC_TOGGLE_PANELS";
+
 void AddonLoad(AddonAPI_t* api);
 void AddonUnload();
 void AddonRender();
 void AddonOptions();
 
-void OnToggleRaids(const char*, bool) {
-    rc::AppState::Instance().settings.raidPanel.visible =
-        !rc::AppState::Instance().settings.raidPanel.visible;
-}
-
-void OnToggleStrikes(const char*, bool) {
-    rc::AppState::Instance().settings.strikesPanel.visible =
-        !rc::AppState::Instance().settings.strikesPanel.visible;
+void OnTogglePanels(const char*, bool isRelease) {
+    if (isRelease) return;
+    TogglePanelsViaShortcut(rc::AppState::Instance().settings);
 }
 
 void AddonLoad(AddonAPI_t* api) {
@@ -44,8 +42,9 @@ void AddonLoad(AddonAPI_t* api) {
     api->GUI_RegisterCloseOnEscape("Raid Clears", &state.settings.raidPanel.visible);
     api->GUI_RegisterCloseOnEscape("Strike Clears", &state.settings.strikesPanel.visible);
 
-    api->InputBinds_RegisterWithString("NRC_TOGGLE_RAIDS", OnToggleRaids, "ALT+SHIFT+R");
-    api->InputBinds_RegisterWithString("NRC_TOGGLE_STRIKES", OnToggleStrikes, "ALT+SHIFT+S");
+    api->InputBinds_RegisterWithString(kTogglePanels, OnTogglePanels, "ALT+SHIFT+R");
+
+    rc::QuickAccessService::SyncVisibility(api, state);
 
     api->Log(LOGL_INFO, "NexusRaidClears", "Loaded.");
 }
@@ -54,8 +53,8 @@ void AddonUnload() {
     if (!g_api) return;
     g_api->GUI_Deregister(AddonRender);
     g_api->GUI_Deregister(AddonOptions);
-    g_api->InputBinds_Deregister("NRC_TOGGLE_RAIDS");
-    g_api->InputBinds_Deregister("NRC_TOGGLE_STRIKES");
+    g_api->InputBinds_Deregister(kTogglePanels);
+    rc::QuickAccessService::Unregister(g_api);
     rc::AppState::Instance().Shutdown();
     g_api->Log(LOGL_INFO, "NexusRaidClears", "Unloaded.");
     g_api = nullptr;

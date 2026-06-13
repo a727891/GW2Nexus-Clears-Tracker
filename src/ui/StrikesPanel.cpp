@@ -29,7 +29,7 @@ void Render(AppState& state) {
     state.settings.strikesPanel.posY = pos.y;
 
     std::lock_guard lock(state.dataMutex);
-    GridRenderer::DrawGroups(state.strikeGroups, state.settings, true);
+    GridRenderer::DrawGroups(state.strikeGroups, state.settings, true, true);
     ImGui::End();
 }
 

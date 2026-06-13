@@ -28,7 +28,7 @@ void Render(AppState& state) {
     state.settings.raidPanel.posY = pos.y;
 
     std::lock_guard lock(state.dataMutex);
-    GridRenderer::DrawGroups(state.raidGroups, state.settings, true);
+    GridRenderer::DrawGroups(state.raidGroups, state.settings, true, true);
     ImGui::End();
 }
 

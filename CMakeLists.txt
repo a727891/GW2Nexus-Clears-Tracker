@@ -45,6 +45,7 @@ set(SRC_FILES
     src/core/AppState.cpp
     src/core/SettingsStore.cpp
     src/core/Types.cpp
+    src/core/PanelVisibility.cpp
     src/data/StaticDataLoader.cpp
     src/data/RaidData.cpp
     src/data/StrikeData.cpp
@@ -57,13 +58,16 @@ set(SRC_FILES
     src/services/DailyBountyService.cpp
     src/services/DailyBountyProgressService.cpp
     src/services/PriorityRotationService.cpp
+    src/services/WeeklyBountyEncountersService.cpp
     src/services/StrikePersistance.cpp
     src/services/ResetsWatcher.cpp
     src/services/MapWatcherService.cpp
+    src/ui/GridLayout.cpp
     src/ui/GridRenderer.cpp
     src/ui/RaidPanel.cpp
     src/ui/StrikesPanel.cpp
     src/ui/OptionsPanel.cpp
+    src/ui/QuickAccessService.cpp
 )
 
 add_library(NexusRaidClears SHARED ${SRC_FILES})

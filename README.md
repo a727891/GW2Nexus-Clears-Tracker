@@ -9,7 +9,7 @@ Nexus addon port of the BlishHUD Raid Clears module. Shows raid and strike overl
 - **Daily raid bounties** — today's bounty clear state from achievement category 475
 - **Map-tracked strike** — Dragonstorm clear on map leave via Mumble link
 - **Settings** — API key, colors, poll interval, panel visibility
-- **Keybinds** — `ALT+SHIFT+R` (raids), `ALT+SHIFT+S` (strikes)
+- **Keybind** — `NRC_TOGGLE_PANELS` (default `ALT+SHIFT+R`). Choose which panels respond in options via **Toggle raids/strikes on keybind / corner icon click**. Corner icon left-click uses the same shortcut.
 
 ## Requirements
 

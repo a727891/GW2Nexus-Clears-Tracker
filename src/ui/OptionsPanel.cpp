@@ -1,6 +1,7 @@
 #include "ui/RaidPanel.h"
 
 #include "core/AppState.h"
+#include "ui/QuickAccessService.h"
 
 #include <cstring>
 #include <imgui.h>
@@ -35,6 +36,40 @@ void Render(AppState& state) {
     ImGui::Checkbox("Show Raids Panel", &state.settings.raidPanel.visible);
     ImGui::Checkbox("Show Strikes Panel", &state.settings.strikesPanel.visible);
 
+    const char* layoutLabels[] = {"Vertical", "Horizontal"};
+    int layoutIndex = state.settings.panelLayout == PanelLayout::Horizontal ? 1 : 0;
+    if (ImGui::Combo("Panel layout", &layoutIndex, layoutLabels, 2)) {
+        state.settings.panelLayout =
+            layoutIndex == 1 ? PanelLayout::Horizontal : PanelLayout::Vertical;
+    }
+
+    ImGui::Text("Panel visibility shortcut (NRC_TOGGLE_PANELS)");
+    ImGui::Checkbox("Toggle raids on keybind / corner icon click",
+                    &state.settings.keybindToggleRaids);
+    ImGui::Checkbox("Toggle strikes on keybind / corner icon click",
+                    &state.settings.keybindToggleStrikes);
+
+    if (ImGui::Checkbox("Show corner icon", &state.settings.cornerIconEnabled)) {
+        if (state.api) {
+            rc::QuickAccessService::SyncVisibility(state.api, state);
+        }
+    }
+
+    if (ImGui::Checkbox("Highlight non-weekly bounty encounters",
+                          &state.settings.highlightNonWeeklyBounty)) {
+        std::lock_guard lock(state.dataMutex);
+        state.ApplyNonWeeklyHighlights();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Uncleared raid and strike bosses that will not be daily bounties for the rest of "
+            "the week are highlighted in orange.");
+    }
+    if (ImGui::Checkbox("Omit event encounters from highlight", &state.settings.omitEventEncounters)) {
+        std::lock_guard lock(state.dataMutex);
+        state.ApplyNonWeeklyHighlights();
+    }
+
     int pollMinutes = state.settings.pollIntervalMinutes;
     if (ImGui::SliderInt("API Poll Interval (min)", &pollMinutes, 1, 30)) {
         state.settings.pollIntervalMinutes = pollMinutes;
@@ -65,6 +100,15 @@ void Render(AppState& state) {
         state.settings.colorUnknown = {static_cast<uint8_t>(unknown[0] * 255),
                                        static_cast<uint8_t>(unknown[1] * 255),
                                        static_cast<uint8_t>(unknown[2] * 255)};
+    }
+    float nonWeekly[3] = {state.settings.colorNonWeeklyBounty.r / 255.0f,
+                          state.settings.colorNonWeeklyBounty.g / 255.0f,
+                          state.settings.colorNonWeeklyBounty.b / 255.0f};
+    if (ImGui::ColorEdit3("Non-Weekly Bounty Color", nonWeekly)) {
+        state.settings.colorNonWeeklyBounty = {
+            static_cast<uint8_t>(nonWeekly[0] * 255),
+            static_cast<uint8_t>(nonWeekly[1] * 255),
+            static_cast<uint8_t>(nonWeekly[2] * 255)};
     }
 
     if (ImGui::Button("Refresh Now")) {

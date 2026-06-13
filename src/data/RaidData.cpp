@@ -1,6 +1,36 @@
 #include "data/RaidData.h"
 
+#include <cctype>
+
 namespace rc {
+
+namespace {
+
+constexpr const char* kDefaultEventEncounterApiIds[] = {
+    "spirit_woods", "bandit_trio", "escort",      "twisted_castle",
+    "river_of_souls", "statues_of_grenth", "gate", "camp",
+};
+
+bool EqualsIgnoreCase(const std::string& a, const std::string& b) {
+    if (a.size() != b.size()) return false;
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (std::tolower(static_cast<unsigned char>(a[i])) !=
+            std::tolower(static_cast<unsigned char>(b[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool IsInEventEncounterList(const std::string& apiId,
+                            const std::vector<std::string>& eventIds) {
+    for (const auto& id : eventIds) {
+        if (EqualsIgnoreCase(id, apiId)) return true;
+    }
+    return false;
+}
+
+}  // namespace
 
 BossEncounter BossEncounter::FromJson(const nlohmann::json& j, bool isStrike) {
     BossEncounter e;
@@ -32,6 +62,11 @@ RaidData RaidData::FromJson(const nlohmann::json& j) {
     if (j.contains("eventEncounterApiIds")) {
         for (const auto& id : j["eventEncounterApiIds"]) {
             data.eventEncounterApiIds.push_back(id.get<std::string>());
+        }
+    }
+    if (data.eventEncounterApiIds.empty()) {
+        for (const auto* id : kDefaultEventEncounterApiIds) {
+            data.eventEncounterApiIds.emplace_back(id);
         }
     }
     if (!j.contains("expansions")) return data;
@@ -71,10 +106,7 @@ const BossEncounter* RaidData::GetEncounterByApiId(const std::string& apiId) con
 }
 
 bool RaidData::IsEventEncounter(const std::string& apiId) const {
-    for (const auto& id : eventEncounterApiIds) {
-        if (id == apiId) return true;
-    }
-    return false;
+    return IsInEventEncounterList(apiId, eventEncounterApiIds);
 }
 
 }  // namespace rc

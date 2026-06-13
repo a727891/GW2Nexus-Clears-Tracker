@@ -53,6 +53,11 @@ std::optional<EncounterCell> ResolveBountyEncounter(const std::string& apiId,
 
 }  // namespace
 
+std::vector<std::string> DailyBountyService::GetBountyEncounterApiIdsForDay(
+    const DailyBountyData& bountyData, int dayIndex) {
+    return GetBountyApiIdsForDay(bountyData, dayIndex);
+}
+
 std::vector<EncounterCell> DailyBountyService::GetDailyBounties(const DailyBountyData& bountyData,
                                                                 const RaidData& raidData,
                                                                 const StrikeData& strikeData,

@@ -12,6 +12,11 @@ enum class ClearState {
     NotCleared,
 };
 
+enum class PanelLayout {
+    Vertical,
+    Horizontal,
+};
+
 struct ColorRGB {
     uint8_t r = 0;
     uint8_t g = 0;
@@ -33,6 +38,7 @@ struct EncounterCell {
     std::string abbreviation;
     ClearState state = ClearState::Unknown;
     int dailyBountyAchievementId = 0;
+    bool highlightNonWeeklyBounty = false;
 };
 
 struct GridGroup {
