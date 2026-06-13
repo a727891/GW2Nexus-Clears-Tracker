@@ -52,6 +52,14 @@ void DrawBoldTextAt(ImDrawList* draw,
     draw->AddText(pos, color, text);
 }
 
+uint32_t ApplyOpacity(uint32_t color, float opacity) {
+    if (opacity >= 1.0f) return color;
+    if (opacity <= 0.0f) return color & ~IM_COL32_A_MASK;
+    const uint32_t alpha = (color >> IM_COL32_A_SHIFT) & 0xFF;
+    const uint32_t scaledAlpha = static_cast<uint32_t>(alpha * opacity);
+    return (color & ~IM_COL32_A_MASK) | (scaledAlpha << IM_COL32_A_SHIFT);
+}
+
 uint32_t ColorForState(const EncounterCell& cell,
                        const SettingsStore& settings,
                        bool colorClears,
@@ -94,7 +102,11 @@ void DrawCellBackground(ImDrawList* draw,
                         float height,
                         uint32_t fillColor,
                         bool organic,
-                        uint32_t styleSeed) {
+                        uint32_t styleSeed,
+                        float opacity) {
+    fillColor = ApplyOpacity(fillColor, opacity);
+    if (opacity <= 0.0f) return;
+
     const ImVec2 baseP1(p0.x + width, p0.y + height);
     if (organic && GridMaskService::HasMasks()) {
         const auto style = GridMaskService::StyleForSeed(styleSeed);
@@ -106,7 +118,7 @@ void DrawCellBackground(ImDrawList* draw,
     }
 
     draw->AddRectFilled(p0, baseP1, fillColor);
-    draw->AddRect(p0, baseP1, IM_COL32(0, 0, 0, 180));
+    draw->AddRect(p0, baseP1, ApplyOpacity(IM_COL32(0, 0, 0, 180), opacity));
 }
 
 void DrawEncounterCellAt(const ImVec2& p0,
@@ -127,14 +139,15 @@ void DrawEncounterCellAt(const ImVec2& p0,
     const uint32_t styleSeed =
         GridMaskService::HashSeed(group.id, cell.id.empty() ? cell.name : cell.id);
     DrawCellBackground(draw, p0, width, cellHeight, fillColor,
-                       settings.organicGridBoxBackgrounds, styleSeed);
+                       settings.organicGridBoxBackgrounds, styleSeed, settings.gridOpacity);
 
     const ImVec2 p1(p0.x + width, p0.y + cellHeight);
     const char* label = cell.abbreviation.empty() ? cell.name.c_str() : cell.abbreviation.c_str();
     const ImVec2 textSize = MeasureText(label, font, fontSize);
     const ImVec2 textPos(p0.x + (width - textSize.x) * 0.5f,
                          p0.y + (cellHeight - textSize.y) * 0.5f);
-    DrawBoldTextAt(draw, textPos, textColor, label, font, fontSize);
+    DrawBoldTextAt(draw, textPos, ApplyOpacity(textColor, settings.gridOpacity), label, font,
+                   fontSize);
 
     if (ImGui::IsMouseHoveringRect(p0, p1)) {
         ImGui::SetTooltip("%s", cell.name.c_str());
@@ -155,7 +168,7 @@ void DrawLabelCellAt(const ImVec2& p0,
     ImDrawList* draw = ImGui::GetWindowDrawList();
     const uint32_t styleSeed = GridMaskService::HashSeed(groupId);
     DrawCellBackground(draw, p0, width, cellHeight, IM_COL32(40, 40, 40, 220),
-                       settings.organicGridBoxBackgrounds, styleSeed);
+                       settings.organicGridBoxBackgrounds, styleSeed, settings.labelOpacity);
 
     const ImVec2 p1(p0.x + width, p0.y + cellHeight);
     const ImVec2 textSize = MeasureText(abbreviation, font, fontSize);
@@ -163,8 +176,8 @@ void DrawLabelCellAt(const ImVec2& p0,
     if (align == GridLayout::LabelAlign::Right) {
         textX = p0.x + width - textSize.x - GridLayout::Scaled(4.0f, settings.panelScale);
     }
-    DrawTextAt(draw, ImVec2(textX, p0.y + (cellHeight - textSize.y) * 0.5f), textColor,
-               abbreviation, font, fontSize);
+    DrawTextAt(draw, ImVec2(textX, p0.y + (cellHeight - textSize.y) * 0.5f),
+               ApplyOpacity(textColor, settings.labelOpacity), abbreviation, font, fontSize);
     if (ImGui::IsMouseHoveringRect(p0, p1)) {
         ImGui::SetTooltip("%s", tooltip);
     }
@@ -213,6 +226,15 @@ ImVec2 DrawGroups(const std::vector<GridGroup>& groups,
     const ImVec2 contentOrigin = ImGui::GetCursorScreenPos();
 
     ImGui::Dummy(placement.contentSize);
+
+    if (settings.panelBackgroundOpacity > 0.0f) {
+        ImDrawList* draw = ImGui::GetWindowDrawList();
+        const ImVec2 panelP1(contentOrigin.x + placement.contentSize.x,
+                             contentOrigin.y + placement.contentSize.y);
+        draw->AddRectFilled(contentOrigin, panelP1,
+                            IM_COL32(0, 0, 0,
+                                     static_cast<int>(settings.panelBackgroundOpacity * 255.0f)));
+    }
 
     size_t placementIndex = 0;
     for (const auto& group : groups) {

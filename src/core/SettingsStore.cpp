@@ -33,6 +33,12 @@ ColorRGB ColorFromJson(const nlohmann::json& j, const ColorRGB& defaults) {
     return defaults;
 }
 
+float ClampOpacity(float value, float minValue, float maxValue) {
+    if (value < minValue) return minValue;
+    if (value > maxValue) return maxValue;
+    return value;
+}
+
 }  // namespace
 
 void SettingsStore::Load(const std::string& path) {
@@ -80,6 +86,15 @@ void SettingsStore::Load(const std::string& path) {
         lockPanelPosition = j["lockPanelPosition"].get<bool>();
     }
     if (j.contains("panelScale")) panelScale = j["panelScale"].get<float>();
+    if (j.contains("labelOpacity")) {
+        labelOpacity = ClampOpacity(j["labelOpacity"].get<float>(), 0.1f, 1.0f);
+    }
+    if (j.contains("gridOpacity")) {
+        gridOpacity = ClampOpacity(j["gridOpacity"].get<float>(), 0.1f, 1.0f);
+    }
+    if (j.contains("panelBackgroundOpacity")) {
+        panelBackgroundOpacity = ClampOpacity(j["panelBackgroundOpacity"].get<float>(), 0.0f, 1.0f);
+    }
     if (j.contains("highlightEmbolden")) highlightEmbolden = j["highlightEmbolden"].get<bool>();
     if (j.contains("highlightCotm")) highlightCotm = j["highlightCotm"].get<bool>();
     if (j.contains("colorText")) colorText = ColorFromJson(j["colorText"], colorText);
@@ -109,6 +124,9 @@ void SettingsStore::Save(const std::string& path) const {
         {"organicGridBoxBackgrounds", organicGridBoxBackgrounds},
         {"lockPanelPosition", lockPanelPosition},
         {"panelScale", panelScale},
+        {"labelOpacity", labelOpacity},
+        {"gridOpacity", gridOpacity},
+        {"panelBackgroundOpacity", panelBackgroundOpacity},
         {"highlightEmbolden", highlightEmbolden},
         {"highlightCotm", highlightCotm},
         {"colorText", ColorToJson(colorText)},

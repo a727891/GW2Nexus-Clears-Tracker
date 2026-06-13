@@ -132,6 +132,31 @@ void Render(AppState& state) {
         }
     }
 
+    float labelOpacity = state.settings.labelOpacity;
+    if (ImGui::SliderFloat("Label opacity", &labelOpacity, 0.1f, 1.0f, "%.2f")) {
+        state.settings.labelOpacity = labelOpacity;
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Opacity for wing and group label cells.");
+    }
+
+    float gridOpacity = state.settings.gridOpacity;
+    if (ImGui::SliderFloat("Grid opacity", &gridOpacity, 0.1f, 1.0f, "%.2f")) {
+        state.settings.gridOpacity = gridOpacity;
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Opacity for encounter cells.");
+    }
+
+    float panelBackgroundOpacity = state.settings.panelBackgroundOpacity;
+    if (ImGui::SliderFloat("Grid background opacity", &panelBackgroundOpacity, 0.0f, 1.0f,
+                           "%.2f")) {
+        state.settings.panelBackgroundOpacity = panelBackgroundOpacity;
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Opacity for the panel background behind the grid.");
+    }
+
     ImGui::Checkbox("Highlight Emboldened raid wing", &state.settings.highlightEmbolden);
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip(

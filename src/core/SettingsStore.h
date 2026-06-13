@@ -16,6 +16,10 @@ public:
     PanelLayout panelLayout = PanelLayout::Vertical;
     float panelScale = 1.0f;
 
+    float labelOpacity = 1.0f;
+    float gridOpacity = 0.8f;
+    float panelBackgroundOpacity = 0.0f;
+
     bool keybindToggleRaids = true;
     bool keybindToggleStrikes = true;
 
