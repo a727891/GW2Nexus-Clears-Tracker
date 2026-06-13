@@ -1,6 +1,8 @@
 #include "ui/RaidPanel.h"
 
 #include "core/AppState.h"
+#include "ui/GridLayout.h"
+#include "ui/PanelAnchor.h"
 #include "ui/QuickAccessService.h"
 
 #include <cstring>
@@ -41,6 +43,29 @@ void Render(AppState& state) {
     if (ImGui::Combo("Panel layout", &layoutIndex, layoutLabels, 2)) {
         state.settings.panelLayout =
             layoutIndex == 1 ? PanelLayout::Horizontal : PanelLayout::Vertical;
+        if (state.settings.anchorStrikesToRaidPanel) {
+            std::lock_guard lock(state.dataMutex);
+            const auto raidSize = GridLayout::ComputePlacement(state.raidGroups,
+                                                               state.settings.panelLayout)
+                                      .contentSize;
+            PanelAnchor::AlignStrikesToRaid(state.settings, raidSize);
+        }
+    }
+
+    if (ImGui::Checkbox("Anchor strikes panel to raid panel",
+                        &state.settings.anchorStrikesToRaidPanel)) {
+        if (state.settings.anchorStrikesToRaidPanel) {
+            std::lock_guard lock(state.dataMutex);
+            const auto raidSize = GridLayout::ComputePlacement(state.raidGroups,
+                                                               state.settings.panelLayout)
+                                      .contentSize;
+            PanelAnchor::AlignStrikesToRaid(state.settings, raidSize);
+        }
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Keeps the strikes panel attached to the raid panel. Moving either panel moves "
+            "both.");
     }
 
     ImGui::Text("Panel visibility shortcut (NRC_TOGGLE_PANELS)");

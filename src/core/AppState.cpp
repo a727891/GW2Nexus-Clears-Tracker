@@ -4,6 +4,7 @@
 #include "services/DailyBountyService.h"
 #include "services/RaidClearsService.h"
 #include "services/StrikeClearsService.h"
+#include "ui/UiFontService.h"
 
 #include <filesystem>
 #include <nlohmann/json.hpp>
@@ -25,6 +26,8 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     const auto settingsPath = (std::filesystem::path(addonDir) / "settings.json").string();
     settings.Load(settingsPath);
     gw2Api.SetApiKey(settings.apiKey);
+
+    rc::UiFontService::Initialize(api, nexusLink);
 
     apiPoll.SetIntervalMinutes(settings.pollIntervalMinutes);
     apiPoll.SetCallback([this]() { RequestApiRefresh(); });
@@ -61,6 +64,9 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
 }
 
 void AppState::Shutdown() {
+    if (api) {
+        rc::UiFontService::Shutdown(api);
+    }
     const auto settingsPath = (std::filesystem::path(addonDir) / "settings.json").string();
     settings.Save(settingsPath);
     const auto strikePersistPath =

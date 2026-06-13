@@ -64,6 +64,9 @@ set(SRC_FILES
     src/services/MapWatcherService.cpp
     src/ui/GridLayout.cpp
     src/ui/GridRenderer.cpp
+    src/ui/OverlayPanel.cpp
+    src/ui/UiFontService.cpp
+    src/ui/PanelAnchor.cpp
     src/ui/RaidPanel.cpp
     src/ui/StrikesPanel.cpp
     src/ui/OptionsPanel.cpp
