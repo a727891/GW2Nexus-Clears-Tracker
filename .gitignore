@@ -1,0 +1,16 @@
+.git/
+build/
+cmake-build-*/
+*.dll
+*.obj
+*.o
+*.a
+*.lib
+*.exp
+*.pdb
+.idea/
+.vscode/
+compile_commands.json
+
+
+scripts/*.sh

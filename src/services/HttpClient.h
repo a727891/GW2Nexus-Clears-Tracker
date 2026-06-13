@@ -1,0 +1,17 @@
+#pragma once
+
+#include <optional>
+#include <string>
+
+namespace rc {
+
+struct HttpRequestOptions {
+    std::string bearerToken;
+    int connectTimeoutMs = 5000;
+    int readTimeoutMs = 15000;
+};
+
+std::optional<std::string> HttpGetUrl(const std::string& url,
+                                      const HttpRequestOptions& options = {});
+
+}  // namespace rc
