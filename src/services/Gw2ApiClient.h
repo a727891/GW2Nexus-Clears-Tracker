@@ -12,6 +12,8 @@ namespace rc {
 
 struct AccountAchievement {
     int id = 0;
+    int current = 0;
+    int max = 0;
     bool done = false;
     std::vector<int> bits;
 };
@@ -26,6 +28,8 @@ public:
     void SetApiKey(const std::string& key);
 
     std::optional<std::unordered_set<std::string>> FetchRaidClears();
+    std::optional<std::unordered_set<std::string>> FetchDungeonClears();
+    std::optional<std::unordered_set<std::string>> FetchFrequenterPaths();
     std::optional<std::vector<AccountAchievement>> FetchAccountAchievements();
     std::optional<std::vector<int>> FetchAchievementCategoryIds(const std::string& url);
     std::optional<std::string> FetchAccountName();

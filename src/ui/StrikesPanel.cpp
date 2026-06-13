@@ -37,9 +37,11 @@ void Render(AppState& state) {
     }
 
     ImFont* font = UiFontService::GetGridFont(state.nexusLink);
-    GridRenderer::DrawGroups(visibleStrikeGroups, state.settings, true, true, font);
+    GridDrawContext context{&state.raidData, &state.strikeData, &state.mentorProgress, true};
+    GridRenderer::DrawGroups(visibleStrikeGroups, state.settings, true, true, font, context);
     if (OverlayPanel::End(OverlayPanel::PanelRole::Strikes)) {
-        PanelAnchor::OnStrikesDragged(state.settings, raidPlacement.contentSize);
+        PanelAnchor::OnStrikesDragged(state.settings, raidPlacement.contentSize,
+                                       strikePlacement.contentSize);
     }
 }
 

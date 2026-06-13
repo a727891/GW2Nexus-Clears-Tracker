@@ -22,7 +22,9 @@ void AddonOptions();
 
 void OnTogglePanels(const char*, bool isRelease) {
     if (isRelease) return;
-    TogglePanelsViaShortcut(rc::AppState::Instance().settings);
+    auto& state = rc::AppState::Instance();
+    rc::QuickAccessService::OnShortcutActivated(state);
+    TogglePanelsViaShortcut(state.settings);
 }
 
 void AddonLoad(AddonAPI_t* api) {
@@ -41,6 +43,8 @@ void AddonLoad(AddonAPI_t* api) {
     api->GUI_Register(RT_OptionsRender, AddonOptions);
     api->GUI_RegisterCloseOnEscape("Raid Clears", &state.settings.raidPanel.visible);
     api->GUI_RegisterCloseOnEscape("Strike Clears", &state.settings.strikesPanel.visible);
+    api->GUI_RegisterCloseOnEscape("Fractal Clears", &state.settings.fractalsPanel.visible);
+    api->GUI_RegisterCloseOnEscape("Dungeon Clears", &state.settings.dungeonsPanel.visible);
 
     api->InputBinds_RegisterWithString(kTogglePanels, OnTogglePanels, "ALT+SHIFT+R");
 
@@ -74,10 +78,13 @@ void AddonRender() {
     if (state.mumbleLink) {
         const uint32_t mapId = Mumble::GetMapId(state.mumbleLink);
         state.mapWatcher.Update(mapId);
+        state.fractalMapWatcher.Update(mapId);
     }
 
     rc::RaidPanel::Render(state);
     rc::StrikesPanel::Render(state);
+    rc::FractalsPanel::Render(state);
+    rc::DungeonsPanel::Render(state);
 }
 
 void AddonOptions() { rc::OptionsPanel::Render(rc::AppState::Instance()); }

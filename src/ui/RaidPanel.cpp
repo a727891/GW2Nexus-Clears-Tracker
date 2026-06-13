@@ -26,9 +26,20 @@ void Render(AppState& state) {
     }
 
     ImFont* font = UiFontService::GetGridFont(state.nexusLink);
-    GridRenderer::DrawGroups(visibleGroups, state.settings, true, true, font, &state.raidData);
+    GridDrawContext context{&state.raidData, nullptr, &state.mentorProgress, false};
+    GridRenderer::DrawGroups(visibleGroups, state.settings, true, true, font, context);
     if (OverlayPanel::End(OverlayPanel::PanelRole::Raid)) {
-        PanelAnchor::OnRaidDragged(state.settings, placement.contentSize);
+        ImVec2 strikeSize{};
+        if (state.settings.anchorStrikesToRaidPanel ||
+            state.settings.anchorFractalsToStrikesPanel) {
+            const auto visibleStrikeGroups = EncounterVisibilityFilter::FilterStrikeGroups(
+                state.strikeGroups, state.strikeVisibility);
+            strikeSize = GridLayout::ComputePlacement(visibleStrikeGroups,
+                                                      state.settings.panelLayout,
+                                                      state.settings.panelScale)
+                             .contentSize;
+        }
+        PanelAnchor::OnRaidDragged(state.settings, placement.contentSize, strikeSize);
     }
 }
 

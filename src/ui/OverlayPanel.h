@@ -10,6 +10,8 @@ namespace OverlayPanel {
 enum class PanelRole {
     Raid,
     Strikes,
+    Fractals,
+    Dungeons,
 };
 
 bool Begin(const char* id, WindowState& state, ImVec2 contentSize, PanelRole role,

@@ -17,16 +17,14 @@ WindowState* g_windowState = nullptr;
 PanelRole g_activeRole = PanelRole::Raid;
 bool g_lockPosition = false;
 int g_styleVarCount = 0;
-bool g_raidDragging = false;
-bool g_strikesDragging = false;
+bool g_dragging[4] = {};
 
 struct DragState {
     bool active = false;
     ImVec2 grabOffset{};
 };
 
-DragState g_raidDrag;
-DragState g_strikesDrag;
+DragState g_dragStates[4];
 
 float SnapPos(float value) { return std::roundf(value); }
 
@@ -38,9 +36,9 @@ ImVec2 Subtract(const ImVec2& a, const ImVec2& b) {
     return {a.x - b.x, a.y - b.y};
 }
 
-DragState& DragFor(PanelRole role) {
-    return role == PanelRole::Raid ? g_raidDrag : g_strikesDrag;
-}
+int RoleIndex(PanelRole role) { return static_cast<int>(role); }
+
+DragState& DragFor(PanelRole role) { return g_dragStates[RoleIndex(role)]; }
 
 }  // namespace
 
@@ -103,11 +101,7 @@ bool End(PanelRole role) {
         g_windowState->posY = pos.y;
     }
 
-    if (role == PanelRole::Raid) {
-        g_raidDragging = dragged;
-    } else {
-        g_strikesDragging = dragged;
-    }
+    g_dragging[RoleIndex(role)] = dragged;
 
     ImGui::End();
     if (g_styleVarCount > 0) {
@@ -118,9 +112,7 @@ bool End(PanelRole role) {
     return dragged;
 }
 
-bool IsDragging(PanelRole role) {
-    return role == PanelRole::Raid ? g_raidDragging : g_strikesDragging;
-}
+bool IsDragging(PanelRole role) { return g_dragging[RoleIndex(role)]; }
 
 }  // namespace OverlayPanel
 }  // namespace rc

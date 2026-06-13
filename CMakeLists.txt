@@ -53,6 +53,8 @@ set(SRC_FILES
     src/data/RaidData.cpp
     src/data/StrikeData.cpp
     src/data/DailyBountyData.cpp
+    src/data/FractalMapData.cpp
+    src/data/DungeonData.cpp
     src/services/HttpClient.cpp
     src/services/Gw2ApiClient.cpp
     src/services/ApiPollService.cpp
@@ -63,11 +65,18 @@ set(SRC_FILES
     src/services/PriorityRotationService.cpp
     src/services/WeeklyBountyEncountersService.cpp
     src/services/WeeklyModifierService.cpp
+    src/services/DatAssetIconService.cpp
+    src/services/MentorAchievementProgressService.cpp
     src/services/StrikePersistance.cpp
     src/services/ResetsWatcher.cpp
     src/services/MapWatcherService.cpp
+    src/services/FractalRotationService.cpp
+    src/services/FractalPersistance.cpp
+    src/services/FractalMapWatcherService.cpp
+    src/services/DungeonsClearsService.cpp
     src/ui/GridLayout.cpp
     src/ui/GridRenderer.cpp
+    src/ui/EncounterTooltip.cpp
     src/ui/OverlayPanel.cpp
     src/ui/GridMaskService.cpp
     src/ui/UiFontService.cpp
@@ -76,6 +85,8 @@ set(SRC_FILES
     src/ui/StrikesPanel.cpp
     src/ui/OptionsPanel.cpp
     src/ui/EncounterSelectionPanel.cpp
+    src/ui/FractalsPanel.cpp
+    src/ui/DungeonsPanel.cpp
     src/ui/QuickAccessService.cpp
 )
 

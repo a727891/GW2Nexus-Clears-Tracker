@@ -12,6 +12,14 @@ namespace StrikesPanel {
     void Render(AppState& state);
 }
 
+namespace FractalsPanel {
+    void Render(AppState& state);
+}
+
+namespace DungeonsPanel {
+    void Render(AppState& state);
+}
+
 namespace OptionsPanel {
     void Render(AppState& state);
 }

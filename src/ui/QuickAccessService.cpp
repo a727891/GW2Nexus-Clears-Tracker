@@ -17,6 +17,7 @@ constexpr const char* kIconHoverTex = "NRC_ICON_HOVER";
 constexpr const char* kContextMenuId = "NRC_CTX_MENU";
 
 bool registered_ = false;
+std::string cachedTooltip_;
 
 void RenderContextMenu() {
     auto& settings = AppState::Instance().settings;
@@ -34,6 +35,19 @@ void RenderContextMenu() {
     if (ImGui::Selectable("Refresh API")) {
         AppState::Instance().RequestApiRefresh();
     }
+
+    ImGui::Separator();
+    const char* fractalsLabel =
+        settings.fractalsPanel.visible ? "Hide Fractals" : "Show Fractals";
+    if (ImGui::Selectable(fractalsLabel)) {
+        settings.fractalsPanel.visible = !settings.fractalsPanel.visible;
+    }
+
+    const char* dungeonsLabel =
+        settings.dungeonsPanel.visible ? "Hide Dungeons" : "Show Dungeons";
+    if (ImGui::Selectable(dungeonsLabel)) {
+        settings.dungeonsPanel.visible = !settings.dungeonsPanel.visible;
+    }
 }
 
 void LoadTextures(AddonAPI_t* api, const std::string& addonDir) {
@@ -44,6 +58,38 @@ void LoadTextures(AddonAPI_t* api, const std::string& addonDir) {
     api->Textures_GetOrCreateFromFile(kIconHoverTex, hoverPath.c_str());
 }
 
+std::string BuildTooltip(const AppState& state) {
+    std::string tooltip = "Nexus Raid Clears";
+    if (!state.accountName.empty()) {
+        tooltip += "\nAccount: " + state.accountName;
+    }
+    if (!state.motd.empty()) {
+        tooltip += "\n\n" + state.motd;
+    }
+    return tooltip;
+}
+
+bool HasUnreadMotd(const AppState& state) {
+    return !state.motd.empty() && !state.motdId.empty() &&
+           state.settings.lastShownMotdId != state.motdId;
+}
+
+void UpdateMotdNotification(AddonAPI_t* api, const AppState& state) {
+    if (!api || !registered_) return;
+    if (HasUnreadMotd(state)) {
+        api->QuickAccess_Notify(kShortcutId);
+    }
+}
+
+void ReregisterShortcut(AddonAPI_t* api, AppState& state) {
+    if (!api || !registered_) return;
+
+    api->QuickAccess_RemoveContextMenu(kContextMenuId);
+    api->QuickAccess_Remove(kShortcutId);
+    registered_ = false;
+    Register(api, state);
+}
+
 }  // namespace
 
 void Register(AddonAPI_t* api, AppState& state) {
@@ -51,14 +97,12 @@ void Register(AddonAPI_t* api, AppState& state) {
 
     LoadTextures(api, state.addonDir);
 
-    std::string tooltip = "Nexus Raid Clears";
-    if (!state.accountName.empty()) {
-        tooltip += "\n" + state.accountName;
-    }
-
-    api->QuickAccess_Add(kShortcutId, kIconTex, kIconHoverTex, kTogglePanelsBind, tooltip.c_str());
+    cachedTooltip_ = BuildTooltip(state);
+    api->QuickAccess_Add(kShortcutId, kIconTex, kIconHoverTex, kTogglePanelsBind,
+                         cachedTooltip_.c_str());
     api->QuickAccess_AddContextMenu(kContextMenuId, kShortcutId, RenderContextMenu);
     registered_ = true;
+    UpdateMotdNotification(api, state);
 }
 
 void Unregister(AddonAPI_t* api) {
@@ -67,12 +111,34 @@ void Unregister(AddonAPI_t* api) {
     api->QuickAccess_RemoveContextMenu(kContextMenuId);
     api->QuickAccess_Remove(kShortcutId);
     registered_ = false;
+    cachedTooltip_.clear();
+}
+
+void Refresh(AddonAPI_t* api, AppState& state) {
+    if (!api || !state.settings.cornerIconEnabled) return;
+
+    if (!registered_) {
+        Register(api, state);
+        return;
+    }
+
+    const auto tooltip = BuildTooltip(state);
+    if (tooltip != cachedTooltip_) {
+        ReregisterShortcut(api, state);
+    } else {
+        UpdateMotdNotification(api, state);
+    }
+}
+
+void OnShortcutActivated(AppState& state) {
+    if (state.motdId.empty() || state.settings.lastShownMotdId == state.motdId) return;
+    state.settings.lastShownMotdId = state.motdId;
 }
 
 void SyncVisibility(AddonAPI_t* api, AppState& state) {
     if (!api) return;
     if (state.settings.cornerIconEnabled) {
-        if (!registered_) Register(api, state);
+        Refresh(api, state);
     } else {
         Unregister(api);
     }

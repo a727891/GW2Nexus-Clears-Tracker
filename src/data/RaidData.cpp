@@ -44,6 +44,9 @@ BossEncounter BossEncounter::FromJson(const nlohmann::json& j, bool isStrike) {
         e.abbreviation = j.value("abbriviation", "");
     }
     e.assetId = j.value("assetId", 0);
+    e.powerFavored = j.value("powerFavored", false);
+    e.condiFavored = j.value("condiFavored", false);
+    e.needsDefianceBreak = j.value("needsDefianceBreak", false);
     if (j.contains("mapIds")) {
         for (const auto& id : j["mapIds"]) {
             e.mapIds.push_back(id.get<int>());
@@ -51,6 +54,12 @@ BossEncounter BossEncounter::FromJson(const nlohmann::json& j, bool isStrike) {
     }
     if (j.contains("daily_bounty_achievement_id") && !j["daily_bounty_achievement_id"].is_null()) {
         e.dailyBountyAchievementId = j["daily_bounty_achievement_id"].get<int>();
+    }
+    if (j.contains("mentor_achievement_id") && !j["mentor_achievement_id"].is_null()) {
+        e.mentorAchievementId = j["mentor_achievement_id"].get<int>();
+    }
+    if (j.contains("mentor_achievement_max") && !j["mentor_achievement_max"].is_null()) {
+        e.mentorAchievementMax = j["mentor_achievement_max"].get<int>();
     }
     e.resets = j.value("resets", "");
     return e;
@@ -60,6 +69,10 @@ RaidData RaidData::FromJson(const nlohmann::json& j) {
     RaidData data;
     data.version = j.value("version", "");
     data.secondsInWeek = j.value("secondsInWeek", 604800);
+    data.powerDamageAssetId = j.value("powerDamageAssetId", 0);
+    data.condiDamageAssetId = j.value("condiDamageAssetId", 0);
+    data.defianceAssetId = j.value("defianceAssetId", 0);
+    data.mentorAssetId = j.value("mentorAssetId", 0);
     if (j.contains("eventEncounterApiIds")) {
         for (const auto& id : j["eventEncounterApiIds"]) {
             data.eventEncounterApiIds.push_back(id.get<std::string>());
@@ -100,10 +113,14 @@ RaidData RaidData::FromJson(const nlohmann::json& j) {
 }
 
 const BossEncounter* RaidData::GetEncounterByApiId(const std::string& apiId) const {
+    return GetEncounterById(apiId);
+}
+
+const BossEncounter* RaidData::GetEncounterById(const std::string& id) const {
     for (const auto& exp : expansions) {
         for (const auto& wing : exp.wings) {
             for (const auto& enc : wing.encounters) {
-                if (enc.EncounterId() == apiId) return &enc;
+                if (enc.EncounterId() == id) return &enc;
             }
         }
     }

@@ -52,6 +52,12 @@ void SettingsStore::Load(const std::string& path) {
     if (j.contains("pollIntervalMinutes")) pollIntervalMinutes = j["pollIntervalMinutes"].get<int>();
     if (j.contains("raidPanel")) raidPanel = WindowFromJson(j["raidPanel"], raidPanel);
     if (j.contains("strikesPanel")) strikesPanel = WindowFromJson(j["strikesPanel"], strikesPanel);
+    if (j.contains("fractalsPanel")) {
+        fractalsPanel = WindowFromJson(j["fractalsPanel"], fractalsPanel);
+    }
+    if (j.contains("dungeonsPanel")) {
+        dungeonsPanel = WindowFromJson(j["dungeonsPanel"], dungeonsPanel);
+    }
     if (j.contains("panelLayout")) {
         const auto value = j["panelLayout"].get<std::string>();
         if (value == "Horizontal") {
@@ -66,6 +72,12 @@ void SettingsStore::Load(const std::string& path) {
     if (j.contains("keybindToggleStrikes")) {
         keybindToggleStrikes = j["keybindToggleStrikes"].get<bool>();
     }
+    if (j.contains("keybindToggleFractals")) {
+        keybindToggleFractals = j["keybindToggleFractals"].get<bool>();
+    }
+    if (j.contains("keybindToggleDungeons")) {
+        keybindToggleDungeons = j["keybindToggleDungeons"].get<bool>();
+    }
     if (!j.contains("keybindToggleRaids") && !j.contains("keybindToggleStrikes") &&
         j.contains("keybindTogglesBothPanels") && j["keybindTogglesBothPanels"].get<bool>()) {
         keybindToggleRaids = true;
@@ -79,11 +91,46 @@ void SettingsStore::Load(const std::string& path) {
     if (j.contains("anchorStrikesToRaidPanel")) {
         anchorStrikesToRaidPanel = j["anchorStrikesToRaidPanel"].get<bool>();
     }
+    if (j.contains("anchorFractalsToStrikesPanel")) {
+        anchorFractalsToStrikesPanel = j["anchorFractalsToStrikesPanel"].get<bool>();
+    }
     if (j.contains("organicGridBoxBackgrounds")) {
         organicGridBoxBackgrounds = j["organicGridBoxBackgrounds"].get<bool>();
     }
     if (j.contains("lockPanelPosition")) {
         lockPanelPosition = j["lockPanelPosition"].get<bool>();
+    }
+    if (j.contains("enableTooltips")) {
+        enableTooltips = j["enableTooltips"].get<bool>();
+    }
+    if (j.contains("showMentorProgress")) {
+        showMentorProgress = j["showMentorProgress"].get<bool>();
+    }
+    if (j.contains("lastShownMotdId")) {
+        lastShownMotdId = j["lastShownMotdId"].get<std::string>();
+    }
+    if (j.contains("fractalChallengeMotes")) {
+        fractalChallengeMotes = j["fractalChallengeMotes"].get<bool>();
+    }
+    if (j.contains("fractalDailyTierN")) {
+        fractalDailyTierN = j["fractalDailyTierN"].get<bool>();
+    }
+    if (j.contains("fractalDailyRecs")) {
+        fractalDailyRecs = j["fractalDailyRecs"].get<bool>();
+    }
+    if (j.contains("fractalTomorrowTierN")) {
+        fractalTomorrowTierN = j["fractalTomorrowTierN"].get<bool>();
+    }
+    if (j.contains("dungeonFrequenterVisible")) {
+        dungeonFrequenterVisible = j["dungeonFrequenterVisible"].get<bool>();
+    }
+    if (j.contains("dungeonHighlightFrequenter")) {
+        dungeonHighlightFrequenter = j["dungeonHighlightFrequenter"].get<bool>();
+    }
+    if (j.contains("dungeonVisible") && j["dungeonVisible"].is_array()) {
+        for (size_t i = 0; i < dungeonVisible.size() && i < j["dungeonVisible"].size(); ++i) {
+            dungeonVisible[i] = j["dungeonVisible"][i].get<bool>();
+        }
     }
     if (j.contains("panelScale")) panelScale = j["panelScale"].get<float>();
     if (j.contains("labelOpacity")) {
@@ -106,6 +153,9 @@ void SettingsStore::Load(const std::string& path) {
     }
     if (j.contains("colorEmbolden")) colorEmbolden = ColorFromJson(j["colorEmbolden"], colorEmbolden);
     if (j.contains("colorCotm")) colorCotm = ColorFromJson(j["colorCotm"], colorCotm);
+    if (j.contains("colorDungeonFrequenter")) {
+        colorDungeonFrequenter = ColorFromJson(j["colorDungeonFrequenter"], colorDungeonFrequenter);
+    }
 }
 
 void SettingsStore::Save(const std::string& path) const {
@@ -114,15 +164,30 @@ void SettingsStore::Save(const std::string& path) const {
         {"pollIntervalMinutes", pollIntervalMinutes},
         {"raidPanel", WindowToJson(raidPanel)},
         {"strikesPanel", WindowToJson(strikesPanel)},
+        {"fractalsPanel", WindowToJson(fractalsPanel)},
+        {"dungeonsPanel", WindowToJson(dungeonsPanel)},
         {"panelLayout", panelLayout == PanelLayout::Horizontal ? "Horizontal" : "Vertical"},
         {"keybindToggleRaids", keybindToggleRaids},
         {"keybindToggleStrikes", keybindToggleStrikes},
+        {"keybindToggleFractals", keybindToggleFractals},
+        {"keybindToggleDungeons", keybindToggleDungeons},
         {"cornerIconEnabled", cornerIconEnabled},
         {"highlightNonWeeklyBounty", highlightNonWeeklyBounty},
         {"omitEventEncounters", omitEventEncounters},
         {"anchorStrikesToRaidPanel", anchorStrikesToRaidPanel},
+        {"anchorFractalsToStrikesPanel", anchorFractalsToStrikesPanel},
         {"organicGridBoxBackgrounds", organicGridBoxBackgrounds},
         {"lockPanelPosition", lockPanelPosition},
+        {"enableTooltips", enableTooltips},
+        {"showMentorProgress", showMentorProgress},
+        {"lastShownMotdId", lastShownMotdId},
+        {"fractalChallengeMotes", fractalChallengeMotes},
+        {"fractalDailyTierN", fractalDailyTierN},
+        {"fractalDailyRecs", fractalDailyRecs},
+        {"fractalTomorrowTierN", fractalTomorrowTierN},
+        {"dungeonFrequenterVisible", dungeonFrequenterVisible},
+        {"dungeonHighlightFrequenter", dungeonHighlightFrequenter},
+        {"dungeonVisible", dungeonVisible},
         {"panelScale", panelScale},
         {"labelOpacity", labelOpacity},
         {"gridOpacity", gridOpacity},
@@ -136,6 +201,7 @@ void SettingsStore::Save(const std::string& path) const {
         {"colorNonWeeklyBounty", ColorToJson(colorNonWeeklyBounty)},
         {"colorEmbolden", ColorToJson(colorEmbolden)},
         {"colorCotm", ColorToJson(colorCotm)},
+        {"colorDungeonFrequenter", ColorToJson(colorDungeonFrequenter)},
     };
 
     std::filesystem::path p(path);

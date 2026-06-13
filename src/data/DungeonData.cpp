@@ -1,0 +1,63 @@
+#include "data/DungeonData.h"
+
+namespace rc {
+
+const std::array<DungeonGroupDef, 9>& DungeonData::Groups() {
+    static const std::array<DungeonGroupDef, 9> groups = {{
+        {"Ascalonian Catacombs\nStory 30, Explore 35",
+         "AC",
+         {{"ac_story", "Story", "S"},
+          {"hodgins", "hodgins", "H"},
+          {"detha", "detha", "D"},
+          {"tzark", "tzark", "T"}}},
+        {"Caudecus Manor\nStory 40, Explore 45",
+         "CM",
+         {{"cm_story", "Story", "S"},
+          {"asura", "asura", "A"},
+          {"seraph", "seraph", "S"},
+          {"butler", "butler", "B"}}},
+        {"Twilight Arbor\nStory 50, Explore 55",
+         "TA",
+         {{"ta_story", "Story", "S"},
+          {"leurent", "leurent (Up)", "Up"},
+          {"vevina", "vevina (Forward)", "Fwd"},
+          {"aetherpath", "aetherpath", "Ae"}}},
+        {"Sorrows Embrace\nStory 60, Explore 65",
+         "SE",
+         {{"se_story", "Story", "S"},
+          {"fergg", "fergg", "F"},
+          {"rasalov", "rasalov", "R"},
+          {"koptev", "koptev", "K"}}},
+        {"Citadel of Flame\nStory 70, Explore 75",
+         "CoF",
+         {{"cof_story", "Story", "S"},
+          {"ferrah", "ferrah", "F"},
+          {"magg", "magg", "M"},
+          {"rhiannon", "rhiannon", "R"}}},
+        {"Honor of the Waves\nStory 76, Explore 80",
+         "HW",
+         {{"hotw_story", "Story", "S"},
+          {"butcher", "butcher", "B"},
+          {"plunderer", "plunderer", "P"},
+          {"zealot", "zealot", "Z"}}},
+        {"Crucible of Eternity\nStory 78, Explore 80",
+         "CoE",
+         {{"coe_story", "Story", "S"},
+          {"submarine", "submarine", "S"},
+          {"teleporter", "teleporter", "T"},
+          {"front_door", "front_door", "F"}}},
+        {"Ruined City of Arah\nExplore 80",
+         "Arah",
+         {{"jotun", "jotun", "J"},
+          {"mursaat", "mursaat", "M"},
+          {"forgotten", "forgotten", "F"},
+          {"seer", "seer", "S"}}},
+        {"Frequenter Achievement Summary",
+         "Freq",
+         {{kFrequenterId, "Frequenter Achievement Paths Finished", "0/8"}},
+         true},
+    }};
+    return groups;
+}
+
+}  // namespace rc

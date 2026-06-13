@@ -40,6 +40,10 @@ StrikeData StrikeData::FromJson(const nlohmann::json& j) {
                 m.id = mJ.value("id", "");
                 m.name = mJ.value("name", "");
                 m.abbreviation = mJ.value("abbriviation", "");
+                m.assetId = mJ.value("assetId", 0);
+                m.powerFavored = mJ.value("powerFavored", false);
+                m.condiFavored = mJ.value("condiFavored", false);
+                m.needsDefianceBreak = mJ.value("needsDefianceBreak", false);
                 m.resets = mJ.value("resets", "");
                 if (mJ.contains("mapIds")) {
                     for (const auto& mapId : mJ["mapIds"]) {

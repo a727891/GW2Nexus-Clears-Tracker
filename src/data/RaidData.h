@@ -14,7 +14,12 @@ struct BossEncounter {
     int assetId = 0;
     std::vector<int> mapIds;
     std::optional<int> dailyBountyAchievementId;
+    std::optional<int> mentorAchievementId;
+    std::optional<int> mentorAchievementMax;
     std::string resets;
+    bool powerFavored = false;
+    bool condiFavored = false;
+    bool needsDefianceBreak = false;
 
     std::string EncounterId() const {
         return !apiId.empty() && apiId != "undefined" ? apiId : name;
@@ -45,11 +50,16 @@ class RaidData {
 public:
     std::string version;
     int secondsInWeek = 604800;
+    int powerDamageAssetId = 0;
+    int condiDamageAssetId = 0;
+    int defianceAssetId = 0;
+    int mentorAssetId = 0;
     std::vector<std::string> eventEncounterApiIds;
     std::vector<ExpansionRaid> expansions;
 
     static RaidData FromJson(const nlohmann::json& j);
     const BossEncounter* GetEncounterByApiId(const std::string& apiId) const;
+    const BossEncounter* GetEncounterById(const std::string& id) const;
     const RaidWing* GetWingById(const std::string& wingId) const;
     bool IsEventEncounter(const std::string& apiId) const;
 };

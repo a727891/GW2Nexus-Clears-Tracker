@@ -12,9 +12,13 @@ struct StrikeMission {
     std::string id;
     std::string name;
     std::string abbreviation;
+    int assetId = 0;
     std::vector<int> mapIds;
     std::string resets;
     std::optional<int> dailyBountyAchievementId;
+    bool powerFavored = false;
+    bool condiFavored = false;
+    bool needsDefianceBreak = false;
 };
 
 struct ExpansionStrikes {

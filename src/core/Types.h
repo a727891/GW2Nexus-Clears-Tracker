@@ -39,6 +39,7 @@ struct EncounterCell {
     ClearState state = ClearState::Unknown;
     int dailyBountyAchievementId = 0;
     bool highlightNonWeeklyBounty = false;
+    bool highlightFrequenter = false;
 };
 
 struct GridGroup {
@@ -48,6 +49,8 @@ struct GridGroup {
     std::vector<EncounterCell> encounters;
     bool isDailyBounty = false;
     bool isTomorrowBounty = false;
+    bool isTomorrowFractal = false;
+    bool isFrequenterSummary = false;
 };
 
 }  // namespace rc

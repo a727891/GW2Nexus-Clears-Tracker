@@ -1,5 +1,6 @@
 #include "services/Gw2ApiClient.h"
 
+#include "services/DungeonsClearsService.h"
 #include "services/HttpClient.h"
 
 #include <nlohmann/json.hpp>
@@ -40,6 +41,40 @@ std::optional<std::unordered_set<std::string>> Gw2ApiClient::FetchRaidClears() {
     }
 }
 
+std::optional<std::unordered_set<std::string>> Gw2ApiClient::FetchDungeonClears() {
+    auto body = HttpGet("/v2/account/dungeons", true);
+    if (!body) return std::nullopt;
+
+    try {
+        auto j = nlohmann::json::parse(*body);
+        std::unordered_set<std::string> clears;
+        for (const auto& id : j) {
+            clears.insert(id.get<std::string>());
+        }
+        return clears;
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
+std::optional<std::unordered_set<std::string>> Gw2ApiClient::FetchFrequenterPaths() {
+    auto achievements = FetchAccountAchievements();
+    if (!achievements) return std::nullopt;
+
+    std::unordered_set<std::string> paths;
+    for (const auto& ach : *achievements) {
+        if (ach.id != 2963) continue;
+        for (const int bit : ach.bits) {
+            const auto path = DungeonsClearsService::FrequenterBitToPathId(bit);
+            if (!path.empty()) {
+                paths.insert(path);
+            }
+        }
+        break;
+    }
+    return paths;
+}
+
 std::optional<std::vector<AccountAchievement>> Gw2ApiClient::FetchAccountAchievements() {
     auto body = HttpGet("/v2/account/achievements", true);
     if (!body) return std::nullopt;
@@ -50,6 +85,8 @@ std::optional<std::vector<AccountAchievement>> Gw2ApiClient::FetchAccountAchieve
         for (const auto& ach : j) {
             AccountAchievement a;
             a.id = ach.value("id", 0);
+            a.current = ach.value("current", 0);
+            a.max = ach.value("max", 0);
             a.done = ach.value("done", false);
             if (ach.contains("bits")) {
                 for (const auto& bit : ach["bits"]) {

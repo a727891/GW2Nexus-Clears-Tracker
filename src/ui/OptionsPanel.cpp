@@ -13,6 +13,32 @@
 namespace rc {
 namespace OptionsPanel {
 
+namespace {
+
+void RealignAnchoredPanels(AppState& state) {
+    if (!state.staticDataReady) return;
+    std::lock_guard lock(state.dataMutex);
+    const auto raidSize =
+        GridLayout::ComputePlacement(
+            EncounterVisibilityFilter::FilterRaidGroups(state.raidGroups, state.raidVisibility),
+            state.settings.panelLayout, state.settings.panelScale)
+            .contentSize;
+    const auto strikeSize =
+        GridLayout::ComputePlacement(
+            EncounterVisibilityFilter::FilterStrikeGroups(state.strikeGroups,
+                                                          state.strikeVisibility),
+            state.settings.panelLayout, state.settings.panelScale)
+            .contentSize;
+    if (state.settings.anchorStrikesToRaidPanel) {
+        PanelAnchor::AlignStrikesToRaid(state.settings, raidSize);
+    }
+    if (state.settings.anchorFractalsToStrikesPanel) {
+        PanelAnchor::AlignFractalsToStrikes(state.settings, strikeSize);
+    }
+}
+
+}  // namespace
+
 void Render(AppState& state) {
     ImGui::Separator();
     ImGui::Text("Nexus Raid Clears");
@@ -39,35 +65,23 @@ void Render(AppState& state) {
 
     ImGui::Checkbox("Show Raids Panel", &state.settings.raidPanel.visible);
     ImGui::Checkbox("Show Strikes Panel", &state.settings.strikesPanel.visible);
+    ImGui::Checkbox("Show Fractals Panel", &state.settings.fractalsPanel.visible);
+    ImGui::Checkbox("Show Dungeons Panel", &state.settings.dungeonsPanel.visible);
 
     const char* layoutLabels[] = {"Vertical", "Horizontal"};
     int layoutIndex = state.settings.panelLayout == PanelLayout::Horizontal ? 1 : 0;
     if (ImGui::Combo("Panel layout", &layoutIndex, layoutLabels, 2)) {
         state.settings.panelLayout =
             layoutIndex == 1 ? PanelLayout::Horizontal : PanelLayout::Vertical;
-        if (state.settings.anchorStrikesToRaidPanel) {
-            std::lock_guard lock(state.dataMutex);
-            const auto raidSize =
-                GridLayout::ComputePlacement(
-                    EncounterVisibilityFilter::FilterRaidGroups(state.raidGroups,
-                                                                state.raidVisibility),
-                    state.settings.panelLayout, state.settings.panelScale)
-                    .contentSize;
-            PanelAnchor::AlignStrikesToRaid(state.settings, raidSize);
+        if (state.settings.anchorStrikesToRaidPanel || state.settings.anchorFractalsToStrikesPanel) {
+            RealignAnchoredPanels(state);
         }
     }
 
     if (ImGui::Checkbox("Anchor strikes panel to raid panel",
                         &state.settings.anchorStrikesToRaidPanel)) {
         if (state.settings.anchorStrikesToRaidPanel) {
-            std::lock_guard lock(state.dataMutex);
-            const auto raidSize =
-                GridLayout::ComputePlacement(
-                    EncounterVisibilityFilter::FilterRaidGroups(state.raidGroups,
-                                                                state.raidVisibility),
-                    state.settings.panelLayout, state.settings.panelScale)
-                    .contentSize;
-            PanelAnchor::AlignStrikesToRaid(state.settings, raidSize);
+            RealignAnchoredPanels(state);
         }
     }
     if (ImGui::IsItemHovered()) {
@@ -76,11 +90,27 @@ void Render(AppState& state) {
             "both.");
     }
 
+    if (ImGui::Checkbox("Anchor fractals panel to strikes panel",
+                        &state.settings.anchorFractalsToStrikesPanel)) {
+        if (state.settings.anchorFractalsToStrikesPanel) {
+            RealignAnchoredPanels(state);
+        }
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Keeps the fractals panel attached to the strikes panel. Moving either panel moves "
+            "both, and chained raid anchoring is preserved when enabled.");
+    }
+
     ImGui::Text("Panel visibility shortcut (NRC_TOGGLE_PANELS)");
     ImGui::Checkbox("Toggle raids on keybind / corner icon click",
                     &state.settings.keybindToggleRaids);
     ImGui::Checkbox("Toggle strikes on keybind / corner icon click",
                     &state.settings.keybindToggleStrikes);
+    ImGui::Checkbox("Toggle fractals on keybind / corner icon click",
+                    &state.settings.keybindToggleFractals);
+    ImGui::Checkbox("Toggle dungeons on keybind / corner icon click",
+                    &state.settings.keybindToggleDungeons);
 
     if (ImGui::Checkbox("Show corner icon", &state.settings.cornerIconEnabled)) {
         if (state.api) {
@@ -117,18 +147,24 @@ void Render(AppState& state) {
             "the panels to the game. Tooltips still appear when hovering encounter cells.");
     }
 
+    ImGui::Checkbox("Enable mouse hover tooltips", &state.settings.enableTooltips);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Shows enhanced encounter tooltips with boss icons and mechanic indicators.");
+    }
+
+    ImGui::Checkbox("Show raid mentor progress in tooltips", &state.settings.showMentorProgress);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Shows your raid mentor achievement progress in raid boss tooltips. Requires a GW2 "
+            "API key with account and progression permissions.");
+    }
+
     float panelScale = state.settings.panelScale;
     if (ImGui::SliderFloat("Panel scale", &panelScale, 0.5f, 2.0f, "%.2f")) {
         state.settings.panelScale = panelScale;
-        if (state.settings.anchorStrikesToRaidPanel && state.staticDataReady) {
-            std::lock_guard lock(state.dataMutex);
-            const auto raidSize =
-                GridLayout::ComputePlacement(
-                    EncounterVisibilityFilter::FilterRaidGroups(state.raidGroups,
-                                                                state.raidVisibility),
-                    state.settings.panelLayout, state.settings.panelScale)
-                    .contentSize;
-            PanelAnchor::AlignStrikesToRaid(state.settings, raidSize);
+        if (state.settings.anchorStrikesToRaidPanel || state.settings.anchorFractalsToStrikesPanel) {
+            RealignAnchoredPanels(state);
         }
     }
 
@@ -236,6 +272,53 @@ void Render(AppState& state) {
         state.settings.colorCotm = {static_cast<uint8_t>(cotmColor[0] * 255),
                                     static_cast<uint8_t>(cotmColor[1] * 255),
                                     static_cast<uint8_t>(cotmColor[2] * 255)};
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Fractals");
+    if (ImGui::Checkbox("Show challenge motes", &state.settings.fractalChallengeMotes)) {
+        if (state.fractalDataReady) {
+            std::lock_guard lock(state.dataMutex);
+            state.RebuildFractalGroups();
+        }
+    }
+    if (ImGui::Checkbox("Show daily tier fractals", &state.settings.fractalDailyTierN)) {
+        if (state.fractalDataReady) {
+            std::lock_guard lock(state.dataMutex);
+            state.RebuildFractalGroups();
+        }
+    }
+    if (ImGui::Checkbox("Show daily recommended fractals", &state.settings.fractalDailyRecs)) {
+        if (state.fractalDataReady) {
+            std::lock_guard lock(state.dataMutex);
+            state.RebuildFractalGroups();
+        }
+    }
+    if (ImGui::Checkbox("Show tomorrow tier fractals", &state.settings.fractalTomorrowTierN)) {
+        if (state.fractalDataReady) {
+            std::lock_guard lock(state.dataMutex);
+            state.RebuildFractalGroups();
+        }
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Dungeons");
+    ImGui::Checkbox("Show frequenter summary row", &state.settings.dungeonFrequenterVisible);
+    ImGui::Checkbox("Highlight frequented paths", &state.settings.dungeonHighlightFrequenter);
+    static const char* kDungeonNames[] = {"AC", "CM", "TA", "SE", "CoF", "HW", "CoE", "Arah"};
+    for (size_t i = 0; i < state.settings.dungeonVisible.size(); ++i) {
+        ImGui::Checkbox(kDungeonNames[i], &state.settings.dungeonVisible[i]);
+    }
+    float freqColor[3] = {state.settings.colorDungeonFrequenter.r / 255.0f,
+                          state.settings.colorDungeonFrequenter.g / 255.0f,
+                          state.settings.colorDungeonFrequenter.b / 255.0f};
+    if (ImGui::ColorEdit3("Frequenter text color", freqColor)) {
+        state.settings.colorDungeonFrequenter = {
+            static_cast<uint8_t>(freqColor[0] * 255),
+            static_cast<uint8_t>(freqColor[1] * 255),
+            static_cast<uint8_t>(freqColor[2] * 255)};
+        std::lock_guard lock(state.dataMutex);
+        state.ApplyDungeonClears();
     }
 
     if (ImGui::Button("Refresh Now")) {

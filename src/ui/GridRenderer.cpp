@@ -1,10 +1,12 @@
 #include "ui/GridRenderer.h"
 
 #include "services/WeeklyModifierService.h"
+#include "ui/EncounterTooltip.h"
 #include "ui/GridLayout.h"
 #include "ui/GridMaskService.h"
 
 #include <imgui.h>
+#include <optional>
 
 namespace rc {
 namespace GridRenderer {
@@ -131,9 +133,12 @@ void DrawEncounterCellAt(const ImVec2& p0,
                          bool useNonWeeklyHighlight,
                          ImFont* font,
                          float fontSize,
-                         uint32_t textColor) {
+                         uint32_t textColor,
+                         const GridDrawContext& context,
+                         bool useDungeonFrequenter) {
     ImDrawList* draw = ImGui::GetWindowDrawList();
-    const bool applyColors = colorClears && !group.isTomorrowBounty;
+    const bool applyColors =
+        colorClears && !group.isTomorrowBounty && !group.isTomorrowFractal;
     const uint32_t fillColor =
         ColorForState(cell, settings, applyColors, useNonWeeklyHighlight);
     const uint32_t styleSeed =
@@ -146,10 +151,32 @@ void DrawEncounterCellAt(const ImVec2& p0,
     const ImVec2 textSize = MeasureText(label, font, fontSize);
     const ImVec2 textPos(p0.x + (width - textSize.x) * 0.5f,
                          p0.y + (cellHeight - textSize.y) * 0.5f);
-    DrawBoldTextAt(draw, textPos, ApplyOpacity(textColor, settings.gridOpacity), label, font,
+    uint32_t cellTextColor = textColor;
+    if (useDungeonFrequenter && cell.highlightFrequenter &&
+        settings.dungeonHighlightFrequenter) {
+        cellTextColor = settings.colorDungeonFrequenter.ToImU32(1.0f);
+    }
+    DrawBoldTextAt(draw, textPos, ApplyOpacity(cellTextColor, settings.gridOpacity), label, font,
                    fontSize);
 
-    if (ImGui::IsMouseHoveringRect(p0, p1)) {
+    if (settings.enableTooltips && context.raidData) {
+        std::optional<EncounterTooltipData> tooltipData;
+        if (context.isStrikePanel && context.strikeData) {
+            tooltipData = EncounterTooltip::BuildFromStrike(*context.strikeData, cell.id);
+        }
+        if (!tooltipData && !context.isStrikePanel) {
+            tooltipData = EncounterTooltip::BuildFromRaid(*context.raidData, cell.id);
+        }
+        if (!tooltipData && context.isStrikePanel) {
+            tooltipData = EncounterTooltip::BuildFromRaid(*context.raidData, cell.id);
+        }
+        if (tooltipData) {
+            EncounterTooltip::ShowIfHovered(p0, p1, *tooltipData, *context.raidData,
+                                            context.mentorProgress, settings.showMentorProgress);
+        } else if (ImGui::IsMouseHoveringRect(p0, p1)) {
+            ImGui::SetTooltip("%s", cell.name.c_str());
+        }
+    } else if (ImGui::IsMouseHoveringRect(p0, p1)) {
         ImGui::SetTooltip("%s", cell.name.c_str());
     }
 }
@@ -192,7 +219,9 @@ void DrawGroupAt(const ImVec2& contentOrigin,
                  ImFont* font,
                  float fontSize,
                  float cellHeight,
-                 uint32_t textColor) {
+                 uint32_t textColor,
+                 const GridDrawContext& context,
+                 bool useDungeonFrequenter) {
     const char* wingLabel =
         group.abbreviation.empty() ? group.name.c_str() : group.abbreviation.c_str();
 
@@ -205,7 +234,8 @@ void DrawGroupAt(const ImVec2& contentOrigin,
         } else if (cell.encounterIndex < group.encounters.size()) {
             DrawEncounterCellAt(p0, cell.width, cellHeight,
                                 group.encounters[cell.encounterIndex], group, settings, colorClears,
-                                useNonWeeklyHighlight, font, fontSize, textColor);
+                                useNonWeeklyHighlight, font, fontSize, textColor, context,
+                                useDungeonFrequenter);
         }
     }
 }
@@ -217,7 +247,8 @@ ImVec2 DrawGroups(const std::vector<GridGroup>& groups,
                   bool colorClears,
                   bool useNonWeeklyHighlight,
                   ImFont* font,
-                  const RaidData* raidData) {
+                  const GridDrawContext& context,
+                  bool useDungeonFrequenter) {
     const float scale = settings.panelScale > 0.0f ? settings.panelScale : 1.0f;
     const float fontSize = EffectiveFontSize(font, scale);
     const float cellHeight = GridLayout::Scaled(GridLayout::kCellHeight, scale);
@@ -240,9 +271,10 @@ ImVec2 DrawGroups(const std::vector<GridGroup>& groups,
     for (const auto& group : groups) {
         if (group.encounters.empty()) continue;
         if (placementIndex >= placement.groups.size()) break;
-        const uint32_t textColor = LabelTextColor(group, settings, raidData);
+        const uint32_t textColor = LabelTextColor(group, settings, context.raidData);
         DrawGroupAt(contentOrigin, group, placement.groups[placementIndex], settings, colorClears,
-                    useNonWeeklyHighlight, font, fontSize, cellHeight, textColor);
+                    useNonWeeklyHighlight, font, fontSize, cellHeight, textColor, context,
+                    useDungeonFrequenter);
         ++placementIndex;
     }
 
