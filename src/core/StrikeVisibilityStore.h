@@ -14,10 +14,16 @@ public:
     bool tomorrowBountiesVisible = false;
     std::unordered_map<std::string, bool> expansions;
     std::unordered_map<std::string, bool> missions;
+    std::unordered_map<std::string, std::string> encounterLabels;
 
     void Load(const std::string& path);
     void Save(const std::string& path) const;
     void InitializeFromData(const StrikeData& data);
+    void MigratePriorityLabelKeys();
+
+    std::string GetEncounterLabel(const std::string& encounterId,
+                                  const std::string& defaultAbbrev) const;
+    void SetEncounterLabel(const std::string& encounterId, const std::string& label);
 
     bool IsExpansionVisible(const std::string& expansionId) const;
     bool IsMissionVisible(const std::string& missionId) const;

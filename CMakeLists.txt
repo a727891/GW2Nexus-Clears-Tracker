@@ -85,6 +85,7 @@ set(SRC_FILES
     src/ui/StrikesPanel.cpp
     src/ui/OptionsPanel.cpp
     src/ui/EncounterSelectionPanel.cpp
+    src/ui/LabelCustomizationPanel.cpp
     src/ui/FractalsPanel.cpp
     src/ui/DungeonsPanel.cpp
     src/ui/QuickAccessService.cpp

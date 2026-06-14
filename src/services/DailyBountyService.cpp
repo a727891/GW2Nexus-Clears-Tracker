@@ -1,6 +1,8 @@
 #include "services/DailyBountyService.h"
 #include "services/PriorityRotationService.h"
 
+#include "core/RaidVisibilityStore.h"
+#include "core/StrikeVisibilityStore.h"
 #include "data/StrikeData.h"
 
 #include <optional>
@@ -23,12 +25,18 @@ std::vector<std::string> GetBountyApiIdsForDay(const DailyBountyData& bountyData
 
 std::optional<EncounterCell> ResolveBountyEncounter(const std::string& apiId,
                                                     const RaidData& raidData,
-                                                    const StrikeData& strikeData) {
+                                                    const StrikeData& strikeData,
+                                                    const RaidVisibilityStore* raidLabels,
+                                                    const StrikeVisibilityStore* strikeLabels) {
     if (const auto* raidEnc = raidData.GetEncounterByApiId(apiId)) {
         EncounterCell cell;
         cell.id = apiId;
         cell.name = raidEnc->name;
         cell.abbreviation = raidEnc->abbreviation;
+        if (raidLabels) {
+            cell.abbreviation =
+                raidLabels->GetEncounterLabel(apiId, raidEnc->abbreviation);
+        }
         cell.state = ClearState::Unknown;
         if (raidEnc->dailyBountyAchievementId) {
             cell.dailyBountyAchievementId = *raidEnc->dailyBountyAchievementId;
@@ -41,6 +49,10 @@ std::optional<EncounterCell> ResolveBountyEncounter(const std::string& apiId,
         cell.id = apiId;
         cell.name = strikeEnc->name;
         cell.abbreviation = strikeEnc->abbreviation;
+        if (strikeLabels) {
+            cell.abbreviation =
+                strikeLabels->GetEncounterLabel(apiId, strikeEnc->abbreviation);
+        }
         cell.state = ClearState::Unknown;
         if (strikeEnc->dailyBountyAchievementId) {
             cell.dailyBountyAchievementId = *strikeEnc->dailyBountyAchievementId;
@@ -61,7 +73,9 @@ std::vector<std::string> DailyBountyService::GetBountyEncounterApiIdsForDay(
 std::vector<EncounterCell> DailyBountyService::GetDailyBounties(const DailyBountyData& bountyData,
                                                                 const RaidData& raidData,
                                                                 const StrikeData& strikeData,
-                                                                int dayOffset) {
+                                                                int dayOffset,
+                                                                const RaidVisibilityStore* raidLabels,
+                                                                const StrikeVisibilityStore* strikeLabels) {
     std::vector<EncounterCell> cells;
     if (!bountyData.enabled) return cells;
 
@@ -69,7 +83,8 @@ std::vector<EncounterCell> DailyBountyService::GetDailyBounties(const DailyBount
     const auto apiIds = GetBountyApiIdsForDay(bountyData, dayIndex);
 
     for (const auto& apiId : apiIds) {
-        if (auto cell = ResolveBountyEncounter(apiId, raidData, strikeData)) {
+        if (auto cell = ResolveBountyEncounter(apiId, raidData, strikeData, raidLabels,
+                                               strikeLabels)) {
             cells.push_back(std::move(*cell));
         }
     }

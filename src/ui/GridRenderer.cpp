@@ -171,6 +171,9 @@ void DrawEncounterCellAt(const ImVec2& p0,
             tooltipData = EncounterTooltip::BuildFromRaid(*context.raidData, cell.id);
         }
         if (tooltipData) {
+            if (!cell.abbreviation.empty()) {
+                tooltipData->abbreviation = cell.abbreviation;
+            }
             EncounterTooltip::ShowIfHovered(p0, p1, *tooltipData, *context.raidData,
                                             context.mentorProgress, settings.showMentorProgress);
         } else if (ImGui::IsMouseHoveringRect(p0, p1)) {

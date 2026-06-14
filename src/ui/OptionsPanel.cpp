@@ -4,6 +4,7 @@
 #include "core/EncounterVisibilityFilter.h"
 #include "ui/EncounterSelectionPanel.h"
 #include "ui/GridLayout.h"
+#include "ui/LabelCustomizationPanel.h"
 #include "ui/PanelAnchor.h"
 #include "ui/QuickAccessService.h"
 
@@ -329,6 +330,7 @@ void Render(AppState& state) {
 
     ImGui::Separator();
     EncounterSelectionPanel::Render(state);
+    LabelCustomizationPanel::Render(state);
 
     if (!state.accountName.empty()) {
         ImGui::Text("Account: %s", state.accountName.c_str());

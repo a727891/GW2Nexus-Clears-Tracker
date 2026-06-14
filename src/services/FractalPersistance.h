@@ -5,6 +5,7 @@
 #include <chrono>
 #include <map>
 #include <string>
+#include <unordered_map>
 
 namespace rc {
 
@@ -13,6 +14,7 @@ public:
     std::string version = "3.0.0";
     std::map<std::string, std::map<std::string, std::chrono::system_clock::time_point>>
         accountClears;
+    std::unordered_map<std::string, std::string> encounterLabels;
 
     void Load(const std::string& path, const FractalMapData& fractalData);
     void Save(const std::string& path) const;
@@ -20,6 +22,10 @@ public:
     void RemoveClear(const std::string& account, const std::string& apiLabel);
     std::map<std::string, std::chrono::system_clock::time_point> GetClearsForAccount(
         const std::string& account, const FractalMapData& fractalData) const;
+
+    std::string GetEncounterLabel(const std::string& encounterId,
+                                  const std::string& defaultAbbrev) const;
+    void SetEncounterLabel(const std::string& encounterId, const std::string& label);
 };
 
 }  // namespace rc

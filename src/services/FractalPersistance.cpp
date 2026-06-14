@@ -61,6 +61,14 @@ void FractalPersistance::Load(const std::string& path, const FractalMapData& fra
     in >> j;
     version = j.value("version", version);
     accountClears.clear();
+    encounterLabels.clear();
+    if (j.contains("encounterLabels") && j["encounterLabels"].is_object()) {
+        for (const auto& [id, label] : j["encounterLabels"].items()) {
+            if (label.is_string()) {
+                encounterLabels[id] = label.get<std::string>();
+            }
+        }
+    }
     if (!j.contains("accountClears")) return;
 
     for (auto it = j["accountClears"].begin(); it != j["accountClears"].end(); ++it) {
@@ -85,6 +93,12 @@ void FractalPersistance::Save(const std::string& path) const {
     }
     j["accountClears"] = accounts;
 
+    nlohmann::json labels = nlohmann::json::object();
+    for (const auto& [id, label] : encounterLabels) {
+        labels[id] = label;
+    }
+    j["encounterLabels"] = labels;
+
     std::filesystem::path p(path);
     if (p.has_parent_path()) {
         std::filesystem::create_directories(p.parent_path());
@@ -108,6 +122,19 @@ FractalPersistance::GetClearsForAccount(const std::string& account,
         return it->second;
     }
     return EmptyClears(fractalData);
+}
+
+std::string FractalPersistance::GetEncounterLabel(const std::string& encounterId,
+                                                const std::string& defaultAbbrev) const {
+    if (const auto it = encounterLabels.find(encounterId); it != encounterLabels.end()) {
+        return it->second;
+    }
+    return defaultAbbrev;
+}
+
+void FractalPersistance::SetEncounterLabel(const std::string& encounterId,
+                                          const std::string& label) {
+    encounterLabels[encounterId] = label;
 }
 
 }  // namespace rc

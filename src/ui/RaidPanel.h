@@ -28,4 +28,8 @@ namespace EncounterSelectionPanel {
     void Render(AppState& state);
 }
 
+namespace LabelCustomizationPanel {
+    void Render(AppState& state);
+}
+
 }  // namespace rc

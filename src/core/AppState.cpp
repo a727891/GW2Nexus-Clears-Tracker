@@ -1,4 +1,5 @@
 #include "core/AppState.h"
+#include "core/StorageKeyUtil.h"
 
 #include "data/DungeonData.h"
 #include "data/StaticDataLoader.h"
@@ -267,12 +268,14 @@ void AppState::RebuildRaidGroups() {
             GridGroup group;
             group.id = wing.id;
             group.name = wing.name;
-            group.abbreviation = wing.abbreviation;
+            group.abbreviation =
+                raidVisibility.GetEncounterLabel(wing.id, wing.abbreviation);
             for (const auto& enc : wing.encounters) {
                 EncounterCell cell;
                 cell.id = enc.EncounterId();
                 cell.name = enc.name;
-                cell.abbreviation = enc.abbreviation;
+                cell.abbreviation =
+                    raidVisibility.GetEncounterLabel(enc.EncounterId(), enc.abbreviation);
                 cell.state = ClearState::Unknown;
                 if (enc.dailyBountyAchievementId) {
                     cell.dailyBountyAchievementId = *enc.dailyBountyAchievementId;
@@ -290,12 +293,14 @@ void AppState::RebuildStrikeGroups() {
         GridGroup group;
         group.id = exp.id;
         group.name = exp.name;
-        group.abbreviation = exp.abbreviation;
+        group.abbreviation =
+            strikeVisibility.GetEncounterLabel(exp.id, exp.abbreviation);
         for (const auto& m : exp.missions) {
             EncounterCell cell;
             cell.id = m.id;
             cell.name = m.name;
-            cell.abbreviation = m.abbreviation;
+            cell.abbreviation =
+                strikeVisibility.GetEncounterLabel(m.id, m.abbreviation);
             cell.state = ClearState::Unknown;
             group.encounters.push_back(std::move(cell));
         }
@@ -303,15 +308,22 @@ void AppState::RebuildStrikeGroups() {
     }
 
     if (dailyBountyData.enabled) {
+        const std::string priorityDefault =
+            strikeData.priority.abbreviation.empty() ? dailyBountyData.abbreviation
+                                                     : strikeData.priority.abbreviation;
+        const std::string tomorrowDefault =
+            strikeData.priorityTomorrow.abbreviation.empty()
+                ? dailyBountyData.tomorrowAbbreviation
+                : strikeData.priorityTomorrow.abbreviation;
+
         GridGroup daily;
         daily.id = strikeData.priority.id.empty() ? "priority" : strikeData.priority.id;
         daily.name = "Daily Raid Encounter Bounties";
-        daily.abbreviation = strikeData.priority.abbreviation.empty()
-                                   ? dailyBountyData.abbreviation
-                                   : strikeData.priority.abbreviation;
+        daily.abbreviation =
+            strikeVisibility.GetEncounterLabel(daily.id, priorityDefault);
         daily.isDailyBounty = true;
-        daily.encounters =
-            DailyBountyService::GetDailyBounties(dailyBountyData, raidData, strikeData, 0);
+        daily.encounters = DailyBountyService::GetDailyBounties(
+            dailyBountyData, raidData, strikeData, 0, &raidVisibility, &strikeVisibility);
         strikeGroups.push_back(std::move(daily));
 
         GridGroup tomorrow;
@@ -319,18 +331,56 @@ void AppState::RebuildStrikeGroups() {
                                                              : strikeData.priorityTomorrow.id;
         tomorrow.name = "Tomorrow's Raid Encounter Bounties";
         tomorrow.abbreviation =
-            strikeData.priorityTomorrow.abbreviation.empty()
-                ? dailyBountyData.tomorrowAbbreviation
-                : strikeData.priorityTomorrow.abbreviation;
+            strikeVisibility.GetEncounterLabel(tomorrow.id, tomorrowDefault);
         tomorrow.isTomorrowBounty = true;
-        tomorrow.encounters =
-            DailyBountyService::GetDailyBounties(dailyBountyData, raidData, strikeData, 1);
+        tomorrow.encounters = DailyBountyService::GetDailyBounties(
+            dailyBountyData, raidData, strikeData, 1, &raidVisibility, &strikeVisibility);
         strikeGroups.push_back(std::move(tomorrow));
     }
 }
 
+void AppState::ApplyEncounterLabel(const std::string& encounterId, const std::string& label) {
+    const auto normalized = NormalizeStorageKey(encounterId);
+    const auto matches = [&](const std::string& id) {
+        return id == encounterId || NormalizeStorageKey(id) == normalized;
+    };
+
+    for (auto& group : raidGroups) {
+        if (matches(group.id)) {
+            group.abbreviation = label;
+        }
+        for (auto& cell : group.encounters) {
+            if (matches(cell.id)) {
+                cell.abbreviation = label;
+            }
+        }
+    }
+
+    for (auto& group : strikeGroups) {
+        if (matches(group.id)) {
+            group.abbreviation = label;
+        }
+        for (auto& cell : group.encounters) {
+            if (matches(cell.id)) {
+                cell.abbreviation = label;
+            }
+        }
+    }
+
+    for (auto& group : fractalGroups) {
+        if (matches(group.id)) {
+            group.abbreviation = label;
+        }
+        for (auto& cell : group.encounters) {
+            if (matches(cell.id)) {
+                cell.abbreviation = label;
+            }
+        }
+    }
+}
+
 void AppState::RebuildFractalGroups() {
-    fractalGroups = FractalRotationService::BuildGroups(fractalMapData, settings);
+    fractalGroups = FractalRotationService::BuildGroups(fractalMapData, settings, &fractalPersist);
     ApplyFractalClears();
 }
 

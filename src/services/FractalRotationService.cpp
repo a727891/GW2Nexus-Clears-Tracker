@@ -1,5 +1,6 @@
 #include "services/FractalRotationService.h"
 
+#include "services/FractalPersistance.h"
 #include "services/PriorityRotationService.h"
 
 #include <chrono>
@@ -9,11 +10,14 @@ namespace {
 
 constexpr int kDailyRotationMaxIndex = 15;
 
-EncounterCell MakeCell(const FractalMap& map, const std::string& nameOverride = {}) {
+EncounterCell MakeCell(const FractalMap& map,
+                       const FractalPersistance* labels,
+                       const std::string& nameOverride = {}) {
     EncounterCell cell;
     cell.id = map.apiLabel;
     cell.name = nameOverride.empty() ? map.label : nameOverride;
-    cell.abbreviation = map.shortLabel;
+    cell.abbreviation = labels ? labels->GetEncounterLabel(map.apiLabel, map.shortLabel)
+                               : map.shortLabel;
     cell.state = ClearState::Unknown;
     return cell;
 }
@@ -22,11 +26,13 @@ GridGroup MakeGroup(const std::string& id,
                     const std::string& name,
                     const std::string& abbreviation,
                     std::vector<EncounterCell> encounters,
+                    const FractalPersistance* labels,
                     bool isTomorrowFractal = false) {
     GridGroup group;
     group.id = id;
     group.name = name;
-    group.abbreviation = abbreviation;
+    group.abbreviation =
+        labels ? labels->GetEncounterLabel(id, abbreviation) : abbreviation;
     group.encounters = std::move(encounters);
     group.isTomorrowFractal = isTomorrowFractal;
     return group;
@@ -53,7 +59,8 @@ std::vector<int> DailyRecsRotation(const FractalMapData& data, int index) {
 }  // namespace
 
 std::vector<GridGroup> FractalRotationService::BuildGroups(const FractalMapData& data,
-                                                           const SettingsStore& settings) {
+                                                           const SettingsStore& settings,
+                                                           const FractalPersistance* labels) {
     std::vector<GridGroup> groups;
     const int dayIndex = DayOfYearIndex(std::chrono::system_clock::now());
     const int today = dayIndex % kDailyRotationMaxIndex;
@@ -64,21 +71,21 @@ std::vector<GridGroup> FractalRotationService::BuildGroups(const FractalMapData&
         for (const int scale : data.challengeMotes) {
             const auto map = data.GetFractalForScale(scale);
             if (map.IsValid()) {
-                cells.push_back(MakeCell(map));
+                cells.push_back(MakeCell(map, labels));
             }
         }
-        groups.push_back(MakeGroup("CM", "Challenge Mote", "CM", std::move(cells)));
+        groups.push_back(MakeGroup("CM", "Challenge Mote", "CM", std::move(cells), labels));
     }
 
     if (settings.fractalTomorrowTierN) {
         std::vector<EncounterCell> cells;
         for (const auto& map : DailyTierRotation(data, tomorrow)) {
             if (map.IsValid()) {
-                cells.push_back(MakeCell(map));
+                cells.push_back(MakeCell(map, labels));
             }
         }
         groups.push_back(
-            MakeGroup("Tom", "Tomorrow T#", "Tom", std::move(cells), true));
+            MakeGroup("Tom", "Tomorrow T#", "Tom", std::move(cells), labels, true));
     }
 
     if (settings.fractalDailyTierN) {
@@ -95,9 +102,9 @@ std::vector<GridGroup> FractalRotationService::BuildGroups(const FractalMapData&
             if (tomorrowMap.IsValid()) {
                 tooltipName += "\n\nTomorrow:\n" + tomorrowMap.label;
             }
-            cells.push_back(MakeCell(todayMap, tooltipName));
+            cells.push_back(MakeCell(todayMap, labels, tooltipName));
         }
-        groups.push_back(MakeGroup("T#", "Tier #", "T#", std::move(cells)));
+        groups.push_back(MakeGroup("T#", "Tier #", "T#", std::move(cells), labels));
     }
 
     if (settings.fractalDailyRecs) {
@@ -116,9 +123,9 @@ std::vector<GridGroup> FractalRotationService::BuildGroups(const FractalMapData&
             if (tomorrowMap.IsValid()) {
                 tooltipName += "\n\nTomorrow:\n" + tomorrowMap.label;
             }
-            cells.push_back(MakeCell(todayMap, tooltipName));
+            cells.push_back(MakeCell(todayMap, labels, tooltipName));
         }
-        groups.push_back(MakeGroup("Rec", "Daily Recommended", "Rec", std::move(cells)));
+        groups.push_back(MakeGroup("Rec", "Daily Recommended", "Rec", std::move(cells), labels));
     }
 
     return groups;

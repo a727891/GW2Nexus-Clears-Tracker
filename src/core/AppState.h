@@ -96,6 +96,7 @@ public:
     void RebuildFractalGroups();
     void RebuildDungeonGroups();
     void SyncEncounterVisibility();
+    void ApplyEncounterLabel(const std::string& encounterId, const std::string& label);
     void RefreshTooltipServices();
     void OnApiPoll();
     void ApplyRaidClears();
