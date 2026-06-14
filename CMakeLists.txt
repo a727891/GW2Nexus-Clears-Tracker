@@ -45,21 +45,26 @@ set(CORNER_ICON_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/raidIconDark.png"
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/raidIconBright.png"
 )
+file(GLOB MASK_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/masks/mask_*.png")
 set(EMBEDDED_ASSETS_DIR "${CMAKE_BINARY_DIR}/generated")
 set(EMBEDDED_LOGOS_CPP "${EMBEDDED_ASSETS_DIR}/EmbeddedLogos.cpp")
 set(EMBEDDED_LOGOS_H "${EMBEDDED_ASSETS_DIR}/EmbeddedLogos.h")
 set(EMBEDDED_CORNER_ICONS_CPP "${EMBEDDED_ASSETS_DIR}/EmbeddedCornerIcons.cpp")
 set(EMBEDDED_CORNER_ICONS_H "${EMBEDDED_ASSETS_DIR}/EmbeddedCornerIcons.h")
+set(EMBEDDED_MASKS_CPP "${EMBEDDED_ASSETS_DIR}/EmbeddedMasks.cpp")
+set(EMBEDDED_MASKS_H "${EMBEDDED_ASSETS_DIR}/EmbeddedMasks.h")
 
 add_custom_command(
     OUTPUT ${EMBEDDED_LOGOS_CPP} ${EMBEDDED_LOGOS_H}
            ${EMBEDDED_CORNER_ICONS_CPP} ${EMBEDDED_CORNER_ICONS_H}
+           ${EMBEDDED_MASKS_CPP} ${EMBEDDED_MASKS_H}
     COMMAND ${CMAKE_COMMAND} -E make_directory "${EMBEDDED_ASSETS_DIR}"
     COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_assets.py"
             --logos-dir "${CMAKE_CURRENT_SOURCE_DIR}/assets/logos"
             --textures-dir "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures"
+            --masks-dir "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/masks"
             --output-dir "${EMBEDDED_ASSETS_DIR}"
-    DEPENDS ${LOGO_FILES} ${CORNER_ICON_FILES}
+    DEPENDS ${LOGO_FILES} ${CORNER_ICON_FILES} ${MASK_FILES}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_assets.py"
     COMMENT "Embedding addon PNG assets into binary"
     VERBATIM
@@ -77,6 +82,7 @@ set(SRC_FILES
     src/core/StrikeVisibilityStore.cpp
     src/core/EncounterVisibilityFilter.cpp
     src/data/StaticDataLoader.cpp
+    src/data/ClearsTrackerManifest.cpp
     src/data/RaidData.cpp
     src/data/StrikeData.cpp
     src/data/DailyBountyData.cpp
@@ -114,7 +120,6 @@ set(SRC_FILES
     src/ui/StrikesPanel.cpp
     src/ui/OptionsPanel.cpp
     src/ui/OptionsUiKit.cpp
-    src/ui/OptionsTextureService.cpp
     src/ui/ContentLogoService.cpp
     src/ui/OptionsCommon.cpp
     src/ui/OptionsGeneralTab.cpp
@@ -130,11 +135,13 @@ set(SRC_FILES
     src/ui/QuickAccessService.cpp
     ${EMBEDDED_LOGOS_CPP}
     ${EMBEDDED_CORNER_ICONS_CPP}
+    ${EMBEDDED_MASKS_CPP}
 )
 
 add_custom_target(generate_embedded_assets
     DEPENDS ${EMBEDDED_LOGOS_CPP} ${EMBEDDED_LOGOS_H}
-            ${EMBEDDED_CORNER_ICONS_CPP} ${EMBEDDED_CORNER_ICONS_H})
+            ${EMBEDDED_CORNER_ICONS_CPP} ${EMBEDDED_CORNER_ICONS_H}
+            ${EMBEDDED_MASKS_CPP} ${EMBEDDED_MASKS_H})
 
 add_library(NexusRaidClears SHARED ${SRC_FILES})
 add_dependencies(NexusRaidClears generate_embedded_assets)

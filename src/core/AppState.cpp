@@ -2,6 +2,7 @@
 #include "core/MumbleIdentity.h"
 #include "core/StorageKeyUtil.h"
 
+#include "data/ClearsTrackerManifest.h"
 #include "data/DungeonData.h"
 #include "data/StaticDataLoader.h"
 #include "services/DailyBountyService.h"
@@ -36,23 +37,16 @@ bool LoadFractalMapDataFromCache(const std::string& addonDir, FractalMapData& ou
     }
 }
 
-bool ParseClearsTrackerJson(const std::string& trackerJson, std::string& motd, std::string& motdId) {
-    try {
-        const auto j = nlohmann::json::parse(trackerJson);
-        if (j.contains("motd") && j["motd"].is_string()) {
-            motd = j["motd"].get<std::string>();
-        } else {
-            motd.clear();
-        }
-        if (j.contains("motd_id") && j["motd_id"].is_string()) {
-            motdId = j["motd_id"].get<std::string>();
-        } else {
-            motdId.clear();
-        }
-        return true;
-    } catch (...) {
+bool ApplyClearsTrackerManifest(const std::string& addonDir,
+                                std::string& motd,
+                                std::string& motdId) {
+    ClearsTrackerManifest manifest;
+    if (!ClearsTrackerManifest::LoadLocal(addonDir, manifest)) {
         return false;
     }
+    motd = manifest.motd;
+    motdId = manifest.motdId;
+    return true;
 }
 
 }  // namespace
@@ -151,27 +145,12 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
 
     if (LoadStaticDataFromCache()) {
         if (api) api->Log(LOGL_INFO, "NexusRaidClears", "Loaded static data from cache.");
-        LoadClearsTrackerMetadata();
-        rc::GridMaskService::RequestMasks();
-        RefreshTooltipServices();
-    } else {
-        if (api) {
-            api->Log(LOGL_WARNING, "NexusRaidClears",
-                      "Static data cache missing. Will download in background.");
-        }
-        RequestStaticDataLoad();
-    }
-
-    if (LoadFractalMapDataFromCache(addonDir, fractalMapData)) {
-        fractalDataReady = true;
-        RebuildFractalGroups();
-        if (api) api->Log(LOGL_INFO, "NexusRaidClears", "Loaded fractal map data from cache.");
     } else if (api) {
         api->Log(LOGL_WARNING, "NexusRaidClears",
-                  "Fractal map data cache missing. Will download in background.");
-        RequestStaticDataLoad();
+                  "Static data cache missing. Will sync from manifest.");
     }
-    LoadInstabilitiesData();
+
+    RequestStaticDataLoad();
 
     strikePersist.Load(strikePersistPath, strikeData);
     if (fractalDataReady) {
@@ -203,21 +182,54 @@ void AppState::Shutdown() {
     fractalPersist.Save(fractalPersistPath);
 }
 
-void AppState::LoadStaticDataWithNetwork() {
-    std::string raidJson, strikeJson, bountyJson, trackerJson, fractalJson;
-    const bool ok = StaticDataLoader::Download(addonDir, "raid_data.json", raidJson) &&
-                    StaticDataLoader::Download(addonDir, "strike_data.json", strikeJson) &&
-                    StaticDataLoader::Download(addonDir, "daily_bounties.json", bountyJson);
-    StaticDataLoader::Download(addonDir, "clears_tracker.json", trackerJson);
-    StaticDataLoader::Download(addonDir, "fractal_maps.json", fractalJson);
-
-    if (!ok) {
+void AppState::SyncStaticDataFromManifest() {
+    const auto syncResult = ClearsTrackerSync::SyncVersions(addonDir);
+    if (!syncResult.remoteManifestOk) {
         if (api) {
             api->Log(LOGL_WARNING, "NexusRaidClears",
-                      "Failed to download static JSON data.");
+                      "Failed to download clears_tracker.json manifest.");
+        }
+        if (!staticDataReady) {
+            std::string content;
+            const bool ok =
+                StaticDataLoader::LoadOrDownload(addonDir, "raid_data.json", content) &&
+                StaticDataLoader::LoadOrDownload(addonDir, "strike_data.json", content) &&
+                StaticDataLoader::LoadOrDownload(addonDir, "daily_bounties.json", content);
+            StaticDataLoader::LoadOrDownload(addonDir, "fractal_maps.json", content);
+            StaticDataLoader::LoadOrDownload(addonDir, "fractal_instabilities.json", content);
+            if (!ok && api) {
+                api->Log(LOGL_WARNING, "NexusRaidClears",
+                          "Failed to download core static JSON data.");
+            } else {
+                ReloadStaticDataFromCache();
+            }
         }
         return;
     }
+
+    if (syncResult.anyFileUpdated || !staticDataReady || !fractalDataReady || !instabilitiesDataReady) {
+        if (!ReloadStaticDataFromCache() && api) {
+            api->Log(LOGL_WARNING, "NexusRaidClears",
+                      "Manifest sync completed but cached static JSON is unavailable.");
+        } else if (api) {
+            api->Log(LOGL_INFO, "NexusRaidClears", "Static data manifest sync complete.");
+        }
+    } else {
+        LoadClearsTrackerMetadata();
+        if (api) {
+            QuickAccessService::Refresh(api, *this);
+        }
+    }
+}
+
+bool AppState::LoadStaticDataFromCache() { return ReloadStaticDataFromCache(); }
+
+bool AppState::ReloadStaticDataFromCache() {
+    std::string raidJson, strikeJson, bountyJson;
+    const bool ok = StaticDataLoader::LoadCached(addonDir, "raid_data.json", raidJson) &&
+                    StaticDataLoader::LoadCached(addonDir, "strike_data.json", strikeJson) &&
+                    StaticDataLoader::LoadCached(addonDir, "daily_bounties.json", bountyJson);
+    if (!ok) return false;
 
     try {
         std::lock_guard lock(dataMutex);
@@ -229,56 +241,30 @@ void AppState::LoadStaticDataWithNetwork() {
         RebuildRaidGroups();
         RebuildStrikeGroups();
         SyncEncounterVisibility();
-        if (!trackerJson.empty()) {
-            ParseClearsTrackerJson(trackerJson, motd, motdId);
-        }
-        rc::GridMaskService::RequestMasks();
-        RefreshTooltipServices();
-        if (!fractalDataReady && !fractalJson.empty()) {
-            fractalMapData = FractalMapData::FromJson(nlohmann::json::parse(fractalJson));
-            fractalDataReady = true;
-            RebuildFractalGroups();
-            const auto fractalPersistPath =
-                (std::filesystem::path(addonDir) / "clearsTracker" / "fractal_clears.json")
-                    .string();
-            fractalPersist.Load(fractalPersistPath, fractalMapData);
-            fractalPersist.EnsureChallengeMoteDefaults(fractalMapData);
-            fractalMapWatcher.DispatchCurrentFractalClears();
-        }
-        LoadInstabilitiesData();
-        if (api) {
-            QuickAccessService::Refresh(api, *this);
-            api->Log(LOGL_INFO, "NexusRaidClears", "Downloaded static data.");
-        }
-    } catch (...) {
-        if (api) api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse static JSON data.");
-    }
-}
-
-bool AppState::LoadStaticDataFromCache() {
-    std::string raidJson, strikeJson, bountyJson;
-    const bool ok = StaticDataLoader::LoadCached(addonDir, "raid_data.json", raidJson) &&
-                    StaticDataLoader::LoadCached(addonDir, "strike_data.json", strikeJson) &&
-                    StaticDataLoader::LoadCached(addonDir, "daily_bounties.json", bountyJson);
-    if (!ok) return false;
-
-    try {
-        raidData = RaidData::FromJson(nlohmann::json::parse(raidJson));
-        strikeData = StrikeData::FromJson(nlohmann::json::parse(strikeJson));
-        dailyBountyData = DailyBountyData::FromJson(nlohmann::json::parse(bountyJson));
-        staticDataReady = true;
-        weeklyBountyEncounters.Rebuild(dailyBountyData, resets);
-        RebuildRaidGroups();
-        RebuildStrikeGroups();
-        SyncEncounterVisibility();
         LoadClearsTrackerMetadata();
         rc::GridMaskService::RequestMasks();
         RefreshTooltipServices();
-        if (!fractalDataReady && LoadFractalMapDataFromCache(addonDir, fractalMapData)) {
+
+        const bool hadFractalData = fractalDataReady;
+        if (LoadFractalMapDataFromCache(addonDir, fractalMapData)) {
             fractalDataReady = true;
             RebuildFractalGroups();
+            if (!hadFractalData) {
+                const auto fractalPersistPath =
+                    (std::filesystem::path(addonDir) / "clearsTracker" / "fractal_clears.json")
+                        .string();
+                fractalPersist.Load(fractalPersistPath, fractalMapData);
+                fractalPersist.EnsureChallengeMoteDefaults(fractalMapData);
+                fractalMapWatcher.DispatchCurrentFractalClears();
+            }
+        } else {
+            fractalDataReady = false;
         }
+
         LoadInstabilitiesData();
+        if (api) {
+            QuickAccessService::Refresh(api, *this);
+        }
         return true;
     } catch (...) {
         if (api) api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse cached static JSON.");
@@ -290,12 +276,7 @@ bool AppState::LoadStaticDataFromCache() {
 void AppState::RequestStaticDataLoad() { staticDataLoadPending.store(true); }
 
 bool AppState::LoadClearsTrackerMetadata() {
-    std::string trackerJson;
-    if (!StaticDataLoader::LoadCached(addonDir, "clears_tracker.json", trackerJson)) {
-        return false;
-    }
-
-    if (!ParseClearsTrackerJson(trackerJson, motd, motdId)) {
+    if (!ApplyClearsTrackerManifest(addonDir, motd, motdId)) {
         if (api) {
             api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse clears_tracker.json.");
         }
@@ -308,7 +289,7 @@ void AppState::ProcessPendingStaticDataLoad() {
     if (!staticDataLoadPending.exchange(false)) return;
 
     std::thread([this]() {
-        LoadStaticDataWithNetwork();
+        SyncStaticDataFromManifest();
         if (staticDataReady) {
             RequestApiRefresh();
         }

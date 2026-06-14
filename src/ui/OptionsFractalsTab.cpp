@@ -3,7 +3,6 @@
 #include "core/AppState.h"
 #include "ui/LabelCustomizationPanel.h"
 #include "ui/OptionsCommon.h"
-#include "ui/OptionsTextureService.h"
 #include "ui/OptionsUiKit.h"
 
 #include <imgui.h>
@@ -99,7 +98,7 @@ void Render(AppState& state, int& section) {
 
     BeginTabPage(section, kSections, 2);
     ImGui::PushID("fractals");
-    BeginContentPanel(OptionsTextureService::BackgroundTexture());
+    BeginContentPanel(nullptr);
 
     switch (static_cast<Section>(section)) {
         case Section::Options:

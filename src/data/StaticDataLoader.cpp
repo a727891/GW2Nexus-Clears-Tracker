@@ -56,20 +56,20 @@ bool StaticDataLoader::LoadCached(const std::string& addonDir,
     return !outContent.empty();
 }
 
+bool StaticDataLoader::WriteCached(const std::string& addonDir,
+                                   const std::string& filename,
+                                   const std::string& content) {
+    EnsureCacheDir(addonDir);
+    const auto cacheFile = std::filesystem::path(addonDir) / kCacheDirName / filename;
+    return WriteCacheFile(cacheFile, content);
+}
+
 bool StaticDataLoader::Download(const std::string& addonDir,
                                 const std::string& filename,
                                 std::string& outContent) {
     EnsureCacheDir(addonDir);
     const auto cacheFile = std::filesystem::path(addonDir) / kCacheDirName / filename;
     return DownloadFromUrl(kStaticHostUrl, cacheFile, outContent);
-}
-
-bool StaticDataLoader::DownloadAsset(const std::string& addonDir,
-                                     const std::string& filename,
-                                     std::string& outContent) {
-    EnsureCacheDir(addonDir);
-    const auto cacheFile = std::filesystem::path(addonDir) / kCacheDirName / filename;
-    return DownloadFromUrl(kStaticAssetHostUrl, cacheFile, outContent);
 }
 
 bool StaticDataLoader::LoadOrDownload(const std::string& addonDir,

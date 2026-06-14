@@ -3,7 +3,6 @@
 #include "core/AppState.h"
 #include "core/Branding.h"
 #include "ui/OptionsCommon.h"
-#include "ui/OptionsTextureService.h"
 #include "ui/OptionsUiKit.h"
 #include "ui/QuickAccessService.h"
 
@@ -312,7 +311,7 @@ void Render(AppState& state, int& section) {
 
     BeginTabPage(section, kSections, 6);
     ImGui::PushID("general");
-    BeginContentPanel(OptionsTextureService::BackgroundTexture());
+    BeginContentPanel(nullptr);
 
     switch (static_cast<Section>(section)) {
         case Section::ApiSync:

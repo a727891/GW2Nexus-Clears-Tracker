@@ -97,7 +97,8 @@ public:
     void Initialize(AddonAPI_t* apiPtr);
     void Shutdown();
     bool LoadStaticDataFromCache();
-    void LoadStaticDataWithNetwork();
+    void SyncStaticDataFromManifest();
+    bool ReloadStaticDataFromCache();
     bool LoadClearsTrackerMetadata();
     void RequestStaticDataLoad();
     void ProcessPendingStaticDataLoad();

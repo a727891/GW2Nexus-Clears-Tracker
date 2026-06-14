@@ -122,6 +122,80 @@ const Asset* Find(const char* expansionId) {
     out_cpp.write_text(cpp, encoding="utf-8")
 
 
+def write_masks(masks_dir: Path, out_cpp: Path, out_h: Path) -> None:
+    mask_files = sorted(masks_dir.glob("mask_*.png"))
+    if not mask_files:
+        raise SystemExit(f"no mask PNGs found in {masks_dir}")
+
+    assets = []
+    blob_sections = []
+
+    for mask_path in mask_files:
+        data = mask_path.read_bytes()
+        symbol = sanitize_symbol(mask_path.name)
+        blob_sections.append(
+            f"alignas(4) const unsigned char kMaskBlob_{symbol}[] = {{\n"
+            f"{format_bytes(data)}\n"
+            f"}};\n"
+            f"const size_t kMaskBlobSize_{symbol} = {len(data)};\n"
+        )
+        assets.append(
+            f'    {{"{mask_path.name}", "NRC_MASK_{mask_path.name}", '
+            f"kMaskBlob_{symbol}, kMaskBlobSize_{symbol}}},"
+        )
+
+    out_h.write_text(
+        """#pragma once
+
+#include <cstddef>
+
+namespace rc {
+namespace EmbeddedMasks {
+
+struct Asset {
+    const char* filename;
+    const char* identifier;
+    const unsigned char* data;
+    std::size_t size;
+};
+
+std::size_t Count();
+const Asset* At(std::size_t index);
+
+}  // namespace EmbeddedMasks
+}  // namespace rc
+""",
+        encoding="utf-8",
+    )
+
+    cpp = """#include "EmbeddedMasks.h"
+
+namespace rc {
+namespace EmbeddedMasks {
+namespace {
+
+"""
+    cpp += "\n".join(blob_sections)
+    cpp += "\nconst Asset kAssets[] = {\n"
+    cpp += "\n".join(assets)
+    cpp += """
+};
+
+}  // namespace
+
+std::size_t Count() { return sizeof(kAssets) / sizeof(kAssets[0]); }
+
+const Asset* At(std::size_t index) {
+    if (index >= Count()) return nullptr;
+    return &kAssets[index];
+}
+
+}  // namespace EmbeddedMasks
+}  // namespace rc
+"""
+    out_cpp.write_text(cpp, encoding="utf-8")
+
+
 def write_corner_icons(textures_dir: Path, out_cpp: Path, out_h: Path) -> None:
     assets = []
     blob_sections = []
@@ -202,6 +276,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--logos-dir", required=True, type=Path)
     parser.add_argument("--textures-dir", required=True, type=Path)
+    parser.add_argument("--masks-dir", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
     args = parser.parse_args()
 
@@ -212,6 +287,7 @@ def main() -> int:
         args.output_dir / "EmbeddedCornerIcons.cpp",
         args.output_dir / "EmbeddedCornerIcons.h",
     )
+    write_masks(args.masks_dir, args.output_dir / "EmbeddedMasks.cpp", args.output_dir / "EmbeddedMasks.h")
     return 0
 
 

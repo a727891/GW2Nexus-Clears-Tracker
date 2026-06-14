@@ -2,7 +2,6 @@
 
 #include "core/AppState.h"
 #include "core/Branding.h"
-#include "ui/OptionsTextureService.h"
 #include "ui/ContentLogoService.h"
 #include "ui/OptionsUiKit.h"
 
@@ -17,9 +16,7 @@ void Render(AppState& state) {
     static ShellState shell;
 
     if (state.api) {
-        OptionsTextureService::Initialize(state.api, state.addonDir);
         ContentLogoService::Initialize(state.api, state.addonDir);
-        OptionsTextureService::RequestAssets();
     }
 
     ImGui::TextColored(GoldColor(), kDisplayName);

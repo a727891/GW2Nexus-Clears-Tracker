@@ -1,13 +1,10 @@
 #include "ui/GridMaskService.h"
 
+#include "EmbeddedMasks.h"
 #include "data/StaticDataLoader.h"
 
 #include <array>
-#include <atomic>
 #include <filesystem>
-#include <fstream>
-#include <nlohmann/json.hpp>
-#include <thread>
 #include <vector>
 
 namespace rc {
@@ -23,7 +20,6 @@ constexpr std::array<const char*, 7> kMaskFiles = {
 AddonAPI_t* g_api = nullptr;
 std::string g_addonDir;
 std::vector<ImTextureID> g_masks;
-std::atomic<bool> g_downloadInFlight{false};
 
 OrganicCellStyle BuildStyle(uint32_t seed) {
     OrganicCellStyle style;
@@ -41,72 +37,46 @@ std::filesystem::path CacheDir() {
     return std::filesystem::path(g_addonDir) / StaticDataLoader::kCacheDirName;
 }
 
-std::vector<std::string> LoadMaskManifest() {
-    std::vector<std::string> masks;
-    const auto manifestPath = CacheDir() / "clears_tracker.json";
-    if (std::filesystem::exists(manifestPath)) {
-        try {
-            std::ifstream in(manifestPath);
-            nlohmann::json j;
-            in >> j;
-            if (j.contains("gridbox_masks") && j["gridbox_masks"].is_array()) {
-                for (const auto& mask : j["gridbox_masks"]) {
-                    if (mask.is_string()) {
-                        masks.push_back(mask.get<std::string>());
-                    }
-                }
-            }
-        } catch (...) {
-        }
-    }
+bool LoadMaskFromMemory(const EmbeddedMasks::Asset& asset) {
+    if (!g_api || !g_api->Textures_GetOrCreateFromMemory) return false;
 
-    if (masks.empty()) {
-        masks.reserve(kMaskFiles.size());
-        for (const char* mask : kMaskFiles) {
-            masks.emplace_back(mask);
-        }
-    }
-    return masks;
+    Texture_t* texture = g_api->Textures_GetOrCreateFromMemory(
+        asset.identifier, const_cast<unsigned char*>(asset.data), asset.size);
+    if (!texture || !texture->Resource) return false;
+
+    g_masks.push_back(reinterpret_cast<ImTextureID>(texture->Resource));
+    return true;
 }
 
-bool AnyMasksMissing(const std::vector<std::string>& masks) {
-    const auto cacheDir = CacheDir();
-    for (const auto& mask : masks) {
-        if (!std::filesystem::exists(cacheDir / mask)) {
-            return true;
-        }
-    }
-    return false;
+bool LoadMaskFromFile(const char* filename) {
+    if (!g_api || !g_api->Textures_GetOrCreateFromFile) return false;
+
+    const auto path = (CacheDir() / filename).string();
+    if (!std::filesystem::exists(path)) return false;
+
+    const std::string identifier = "NRC_MASK_FILE_" + std::string(filename);
+    Texture_t* texture = g_api->Textures_GetOrCreateFromFile(identifier.c_str(), path.c_str());
+    if (!texture || !texture->Resource) return false;
+
+    g_masks.push_back(reinterpret_cast<ImTextureID>(texture->Resource));
+    return true;
 }
 
 void LoadMaskTextures() {
     g_masks.clear();
-    if (!g_api || !g_api->Textures_GetOrCreateFromFile) return;
+    if (!g_api) return;
 
-    const auto cacheDir = CacheDir();
-    const auto manifest = LoadMaskManifest();
-    for (const auto& filename : manifest) {
-        const auto path = (cacheDir / filename).string();
-        if (!std::filesystem::exists(path)) continue;
-
-        const std::string identifier = "NRC_MASK_" + filename;
-        Texture_t* texture = g_api->Textures_GetOrCreateFromFile(identifier.c_str(), path.c_str());
-        if (texture && texture->Resource) {
-            g_masks.push_back(reinterpret_cast<ImTextureID>(texture->Resource));
-        }
-    }
-}
-
-void DownloadMasksWorker(std::vector<std::string> masks) {
-    for (const auto& mask : masks) {
-        if (std::filesystem::exists(CacheDir() / mask)) continue;
-
-        std::string content;
-        StaticDataLoader::DownloadAsset(g_addonDir, mask, content);
+    for (std::size_t i = 0; i < EmbeddedMasks::Count(); ++i) {
+        const EmbeddedMasks::Asset* asset = EmbeddedMasks::At(i);
+        if (!asset) continue;
+        LoadMaskFromMemory(*asset);
     }
 
-    LoadMaskTextures();
-    g_downloadInFlight.store(false);
+    if (!g_masks.empty()) return;
+
+    for (const char* filename : kMaskFiles) {
+        LoadMaskFromFile(filename);
+    }
 }
 
 }  // namespace
@@ -117,17 +87,7 @@ void Initialize(AddonAPI_t* api, const std::string& addonDir) {
     LoadMaskTextures();
 }
 
-void RequestMasks() {
-    if (!g_api || g_addonDir.empty()) return;
-
-    LoadMaskTextures();
-
-    const auto masks = LoadMaskManifest();
-    if (!AnyMasksMissing(masks)) return;
-    if (g_downloadInFlight.exchange(true)) return;
-
-    std::thread(DownloadMasksWorker, masks).detach();
-}
+void RequestMasks() { LoadMaskTextures(); }
 
 bool HasMasks() { return !g_masks.empty(); }
 

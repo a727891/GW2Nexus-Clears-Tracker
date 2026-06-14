@@ -1,7 +1,6 @@
 #include "ui/OptionsPanel.h"
 
 #include "core/AppState.h"
-#include "ui/OptionsTextureService.h"
 #include "ui/OptionsUiKit.h"
 
 #include <imgui.h>
@@ -57,7 +56,7 @@ void Render(AppState& state, int& section) {
 
     BeginTabPage(section, kSections, 2);
     ImGui::PushID("dungeons");
-    BeginContentPanel(OptionsTextureService::BackgroundTexture());
+    BeginContentPanel(nullptr);
 
     switch (static_cast<Section>(section)) {
         case Section::Options:

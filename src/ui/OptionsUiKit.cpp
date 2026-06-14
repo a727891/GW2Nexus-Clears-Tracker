@@ -2,7 +2,6 @@
 
 #include "ui/ContentLogoService.h"
 #include "ui/GridMaskService.h"
-#include "ui/OptionsTextureService.h"
 
 #include <imgui.h>
 
