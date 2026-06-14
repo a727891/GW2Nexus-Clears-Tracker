@@ -10,6 +10,7 @@ namespace rc {
 namespace GridMaskService {
 
 void Initialize(AddonAPI_t* api, const std::string& addonDir);
+void RequestMasks();
 bool HasMasks();
 
 struct OrganicCellStyle {

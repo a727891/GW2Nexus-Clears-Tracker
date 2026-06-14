@@ -10,10 +10,10 @@ class SettingsStore {
 public:
     int pollIntervalMinutes = 5;
 
-    WindowState raidPanel;
-    WindowState strikesPanel;
-    WindowState fractalsPanel{true, 250.0f, 525.0f};
-    WindowState dungeonsPanel{true, 250.0f, 605.0f};
+    WindowState raidPanel{true, 367.0f, 165.0f};
+    WindowState strikesPanel{true, 365.0f, 421.0f};
+    WindowState fractalsPanel{true, 364.0f, 581.0f};
+    WindowState dungeonsPanel{true, 364.0f, 675.0f};
 
     PanelLayout panelLayout = PanelLayout::Vertical;
     GroupLabelDisplay groupLabelDisplay = GroupLabelDisplay::Abbreviation;

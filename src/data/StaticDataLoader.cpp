@@ -50,4 +50,22 @@ bool StaticDataLoader::LoadOrDownload(const std::string& addonDir,
     return Download(addonDir, filename, outContent);
 }
 
+bool StaticDataLoader::DownloadToPath(const std::filesystem::path& destFile,
+                                      const std::string& filename) {
+    const std::string url = std::string(kStaticHostUrl) + filename;
+
+    const auto body = HttpGetUrl(url);
+    if (!body || body->empty()) return false;
+
+    if (destFile.has_parent_path()) {
+        std::error_code ec;
+        std::filesystem::create_directories(destFile.parent_path(), ec);
+    }
+
+    std::ofstream out(destFile, std::ios::binary);
+    if (!out.is_open()) return false;
+    out << *body;
+    return true;
+}
+
 }  // namespace rc

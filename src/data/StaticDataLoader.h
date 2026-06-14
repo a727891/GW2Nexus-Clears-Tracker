@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 namespace rc {
@@ -20,6 +21,8 @@ public:
     static bool LoadOrDownload(const std::string& addonDir,
                                const std::string& filename,
                                std::string& outContent);
+    static bool DownloadToPath(const std::filesystem::path& destFile,
+                               const std::string& filename);
 };
 
 }  // namespace rc

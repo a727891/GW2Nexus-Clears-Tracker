@@ -112,6 +112,7 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
 
     rc::UiFontService::Initialize(api, nexusLink);
     rc::GridMaskService::Initialize(api, addonDir);
+    rc::GridMaskService::RequestMasks();
     rc::DatAssetIconService::Initialize(api, addonDir);
 
     apiPoll.SetIntervalMinutes(settings.pollIntervalMinutes);
@@ -151,6 +152,7 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     if (LoadStaticDataFromCache()) {
         if (api) api->Log(LOGL_INFO, "NexusRaidClears", "Loaded static data from cache.");
         LoadClearsTrackerMetadata();
+        rc::GridMaskService::RequestMasks();
         RefreshTooltipServices();
     } else {
         if (api) {
@@ -230,6 +232,7 @@ void AppState::LoadStaticDataWithNetwork() {
         if (!trackerJson.empty()) {
             ParseClearsTrackerJson(trackerJson, motd, motdId);
         }
+        rc::GridMaskService::RequestMasks();
         RefreshTooltipServices();
         if (!fractalDataReady && !fractalJson.empty()) {
             fractalMapData = FractalMapData::FromJson(nlohmann::json::parse(fractalJson));
@@ -269,6 +272,7 @@ bool AppState::LoadStaticDataFromCache() {
         RebuildStrikeGroups();
         SyncEncounterVisibility();
         LoadClearsTrackerMetadata();
+        rc::GridMaskService::RequestMasks();
         RefreshTooltipServices();
         if (!fractalDataReady && LoadFractalMapDataFromCache(addonDir, fractalMapData)) {
             fractalDataReady = true;
