@@ -83,7 +83,10 @@ public:
     std::unordered_set<std::string> frequenterPathsSet;
     std::unordered_set<int> completedBountyAchievementIds;
     std::atomic<bool> apiRefreshPending{false};
-    std::atomic<bool> pendingAccountRefresh{false};
+    std::atomic<bool> pendingCharacterResolve{false};
+    std::atomic<bool> pendingAccountChanged{false};
+    std::atomic<bool> pendingTooltipRefresh{false};
+    std::atomic<bool> accountResolveInFlight{false};
     std::atomic<bool> staticDataLoadPending{false};
     bool staticDataReady = false;
     bool fractalDataReady = false;
@@ -112,6 +115,7 @@ public:
     bool ShouldShowPanel(bool panelVisible) const;
     void RequestApiRefresh();
     void ProcessPendingApiRefresh();
+    void RequestAccountResolve();
     void TickResets();
     void UpdateActiveCharacter(const std::string& characterName);
     void OnActiveAccountChanged();

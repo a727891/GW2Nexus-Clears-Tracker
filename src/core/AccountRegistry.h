@@ -31,7 +31,8 @@ public:
     RegisterKeyResult RegisterKey(Gw2ApiClient& client, const std::string& apiKey);
     bool RemoveKey(const std::string& tokenId);
 
-    bool ResolveActiveAccount(const std::string& characterName, Gw2ApiClient& client);
+    bool ResolveActiveAccountFromCache(const std::string& characterName);
+    bool ResolveActiveAccountWithNetwork(const std::string& characterName, Gw2ApiClient& client);
 
     void RegisterKeyAsync(const std::string& apiKey,
                           const std::string& savePath,

@@ -72,9 +72,15 @@ void AddonRender() {
     state.ProcessPendingStaticDataLoad();
     state.ProcessPendingApiRefresh();
 
-    if (state.pendingAccountRefresh.exchange(false)) {
+    if (state.pendingAccountChanged.exchange(false)) {
+        state.OnActiveAccountChanged();
+    } else if (state.pendingCharacterResolve.exchange(false)) {
         const auto charName = rc::MumbleIdentity::ParseIdentityName(state.mumbleLink);
         state.UpdateActiveCharacter(charName);
+    } else if (state.pendingTooltipRefresh.exchange(false)) {
+        state.accountName = state.accountRegistry.ActiveAccountName().value_or("");
+        state.mentorProgress.SetActiveAccount(state.accountName);
+        rc::QuickAccessService::Refresh(g_api, state);
     }
 
     if (state.mumbleLink) {

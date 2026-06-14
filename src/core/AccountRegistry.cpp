@@ -260,40 +260,52 @@ bool AccountRegistry::RemoveKey(const std::string& tokenId) {
     return true;
 }
 
-bool AccountRegistry::ResolveActiveAccount(const std::string& characterName,
-                                           Gw2ApiClient& client) {
-    {
-        std::lock_guard lock(mutex_);
-        characterName_ = characterName;
-        lastResolvedCharacter_ = characterName;
+bool AccountRegistry::ResolveActiveAccountFromCache(const std::string& characterName) {
+    std::lock_guard lock(mutex_);
+    characterName_ = characterName;
+    lastResolvedCharacter_ = characterName;
 
-        if (characterName.empty()) {
-            const bool changed = activeTokenId_.has_value();
-            activeTokenId_.reset();
-            return changed;
-        }
+    if (characterName.empty()) {
+        const bool changed = activeTokenId_.has_value();
+        activeTokenId_.reset();
+        return changed;
+    }
 
-        if (const auto it = characterToTokenId_.find(characterName);
-            it != characterToTokenId_.end()) {
+    if (const auto it = characterToTokenId_.find(characterName);
+        it != characterToTokenId_.end()) {
+        if (FindByTokenId(it->second)) {
             const bool changed = !activeTokenId_ || *activeTokenId_ != it->second;
-            if (FindByTokenId(it->second)) {
-                activeTokenId_ = it->second;
-            }
+            activeTokenId_ = it->second;
             return changed;
         }
     }
 
+    const bool changed = activeTokenId_.has_value();
+    activeTokenId_.reset();
+    return changed;
+}
+
+bool AccountRegistry::ResolveActiveAccountWithNetwork(const std::string& characterName,
+                                                      Gw2ApiClient& client) {
     std::vector<RegisteredAccount> accountsCopy;
     std::string savePath;
     {
         std::lock_guard lock(mutex_);
+        characterName_ = characterName;
+        lastResolvedCharacter_ = characterName;
         accountsCopy = accounts_;
         savePath = storagePath_;
     }
 
+    if (characterName.empty()) {
+        std::lock_guard lock(mutex_);
+        const bool changed = activeTokenId_.has_value();
+        activeTokenId_.reset();
+        return changed;
+    }
+
     bool charactersUpdated = false;
     bool matchedAccount = false;
-    std::string matchedTokenId;
     bool matchedChanged = false;
 
     for (auto& account : accountsCopy) {
@@ -322,7 +334,6 @@ bool AccountRegistry::ResolveActiveAccount(const std::string& characterName,
                 matchedChanged = !activeTokenId_ || *activeTokenId_ != account.tokenId;
                 activeTokenId_ = account.tokenId;
                 matchedAccount = true;
-                matchedTokenId = account.tokenId;
                 break;
             }
         }
@@ -333,7 +344,6 @@ bool AccountRegistry::ResolveActiveAccount(const std::string& characterName,
     }
 
     if (matchedAccount) {
-        (void)matchedTokenId;
         return matchedChanged;
     }
 

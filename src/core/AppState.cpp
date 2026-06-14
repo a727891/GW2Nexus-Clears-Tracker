@@ -22,13 +22,32 @@ namespace rc {
 
 namespace {
 
-bool LoadFractalMapData(const std::string& addonDir, FractalMapData& outData) {
+bool LoadFractalMapDataFromCache(const std::string& addonDir, FractalMapData& outData) {
     std::string fractalJson;
-    if (!StaticDataLoader::LoadOrDownload(addonDir, "fractal_maps.json", fractalJson)) {
+    if (!StaticDataLoader::LoadCached(addonDir, "fractal_maps.json", fractalJson)) {
         return false;
     }
     try {
         outData = FractalMapData::FromJson(nlohmann::json::parse(fractalJson));
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool ParseClearsTrackerJson(const std::string& trackerJson, std::string& motd, std::string& motdId) {
+    try {
+        const auto j = nlohmann::json::parse(trackerJson);
+        if (j.contains("motd") && j["motd"].is_string()) {
+            motd = j["motd"].get<std::string>();
+        } else {
+            motd.clear();
+        }
+        if (j.contains("motd_id") && j["motd_id"].is_string()) {
+            motdId = j["motd_id"].get<std::string>();
+        } else {
+            motdId.clear();
+        }
         return true;
     } catch (...) {
         return false;
@@ -54,25 +73,37 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     accountRegistry.Load(ApiAccountsPath());
     accountRegistry.SetStoragePath(ApiAccountsPath());
     const auto legacyKey = settings.ConsumeLegacyApiKey();
-    if (!legacyKey.empty() && accountRegistry.AccountsSnapshot().empty()) {
-        const auto result = accountRegistry.RegisterKey(gw2Api, legacyKey);
-        if (result.success) {
-            accountRegistry.Save(ApiAccountsPath());
-            settings.Save(settingsPath);
-            if (api) {
-                api->Log(LOGL_INFO, "NexusRaidClears",
-                          "Migrated legacy API key to registered accounts.");
-            }
+    if (!legacyKey.empty()) {
+        settings.Save(settingsPath);
+        if (accountRegistry.AccountsSnapshot().empty()) {
+            const auto accountsPath = ApiAccountsPath();
+            std::thread([this, legacyKey, accountsPath]() {
+                Gw2ApiClient client;
+                const auto result = accountRegistry.RegisterKey(client, legacyKey);
+                if (result.success) {
+                    accountRegistry.Save(accountsPath);
+                    pendingCharacterResolve.store(true);
+                    if (api) {
+                        api->Log(LOGL_INFO, "NexusRaidClears",
+                                  "Migrated legacy API key to registered accounts.");
+                    }
+                } else if (api) {
+                    api->Log(LOGL_WARNING, "NexusRaidClears", result.message.c_str());
+                }
+            }).detach();
         }
     }
 
     const auto initialCharacter = MumbleIdentity::ParseIdentityName(mumbleLink);
     characterName = initialCharacter;
-    if (accountRegistry.ResolveActiveAccount(initialCharacter, gw2Api)) {
+    if (accountRegistry.ResolveActiveAccountFromCache(initialCharacter)) {
         OnActiveAccountChanged();
     } else {
         accountName = accountRegistry.ActiveAccountName().value_or("");
         mentorProgress.SetActiveAccount(accountName);
+        if (!initialCharacter.empty()) {
+            RequestAccountResolve();
+        }
     }
 
     raidVisibility.Load((std::filesystem::path(addonDir) / "raid_settings.json").string());
@@ -134,13 +165,13 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
         RequestStaticDataLoad();
     }
 
-    if (LoadFractalMapData(addonDir, fractalMapData)) {
+    if (LoadFractalMapDataFromCache(addonDir, fractalMapData)) {
         fractalDataReady = true;
         RebuildFractalGroups();
-        if (api) api->Log(LOGL_INFO, "NexusRaidClears", "Loaded fractal map data.");
+        if (api) api->Log(LOGL_INFO, "NexusRaidClears", "Loaded fractal map data from cache.");
     } else if (api) {
         api->Log(LOGL_WARNING, "NexusRaidClears",
-                  "Fractal map data missing. Will download in background.");
+                  "Fractal map data cache missing. Will download in background.");
         RequestStaticDataLoad();
     }
 
@@ -174,10 +205,12 @@ void AppState::Shutdown() {
 }
 
 void AppState::LoadStaticDataWithNetwork() {
-    std::string raidJson, strikeJson, bountyJson;
+    std::string raidJson, strikeJson, bountyJson, trackerJson, fractalJson;
     const bool ok = StaticDataLoader::Download(addonDir, "raid_data.json", raidJson) &&
                     StaticDataLoader::Download(addonDir, "strike_data.json", strikeJson) &&
                     StaticDataLoader::Download(addonDir, "daily_bounties.json", bountyJson);
+    StaticDataLoader::Download(addonDir, "clears_tracker.json", trackerJson);
+    StaticDataLoader::Download(addonDir, "fractal_maps.json", fractalJson);
 
     if (!ok) {
         if (api) {
@@ -197,9 +230,12 @@ void AppState::LoadStaticDataWithNetwork() {
         RebuildRaidGroups();
         RebuildStrikeGroups();
         SyncEncounterVisibility();
-        LoadClearsTrackerMetadata();
+        if (!trackerJson.empty()) {
+            ParseClearsTrackerJson(trackerJson, motd, motdId);
+        }
         RefreshTooltipServices();
-        if (!fractalDataReady && LoadFractalMapData(addonDir, fractalMapData)) {
+        if (!fractalDataReady && !fractalJson.empty()) {
+            fractalMapData = FractalMapData::FromJson(nlohmann::json::parse(fractalJson));
             fractalDataReady = true;
             RebuildFractalGroups();
             const auto fractalPersistPath =
@@ -235,7 +271,7 @@ bool AppState::LoadStaticDataFromCache() {
         SyncEncounterVisibility();
         LoadClearsTrackerMetadata();
         RefreshTooltipServices();
-        if (!fractalDataReady && LoadFractalMapData(addonDir, fractalMapData)) {
+        if (!fractalDataReady && LoadFractalMapDataFromCache(addonDir, fractalMapData)) {
             fractalDataReady = true;
             RebuildFractalGroups();
         }
@@ -251,29 +287,17 @@ void AppState::RequestStaticDataLoad() { staticDataLoadPending.store(true); }
 
 bool AppState::LoadClearsTrackerMetadata() {
     std::string trackerJson;
-    if (!StaticDataLoader::LoadOrDownload(addonDir, "clears_tracker.json", trackerJson)) {
+    if (!StaticDataLoader::LoadCached(addonDir, "clears_tracker.json", trackerJson)) {
         return false;
     }
 
-    try {
-        const auto j = nlohmann::json::parse(trackerJson);
-        if (j.contains("motd") && j["motd"].is_string()) {
-            motd = j["motd"].get<std::string>();
-        } else {
-            motd.clear();
-        }
-        if (j.contains("motd_id") && j["motd_id"].is_string()) {
-            motdId = j["motd_id"].get<std::string>();
-        } else {
-            motdId.clear();
-        }
-        return true;
-    } catch (...) {
+    if (!ParseClearsTrackerJson(trackerJson, motd, motdId)) {
         if (api) {
             api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse clears_tracker.json.");
         }
         return false;
     }
+    return true;
 }
 
 void AppState::ProcessPendingStaticDataLoad() {
@@ -454,6 +478,23 @@ void AppState::ProcessPendingApiRefresh() {
 
     std::thread([this]() {
         OnApiPoll();
+    }).detach();
+}
+
+void AppState::RequestAccountResolve() {
+    if (characterName.empty()) return;
+    if (accountResolveInFlight.exchange(true)) return;
+
+    const auto character = characterName;
+    std::thread([this, character]() {
+        Gw2ApiClient client;
+        const bool changed = accountRegistry.ResolveActiveAccountWithNetwork(character, client);
+        accountResolveInFlight.store(false);
+        if (changed) {
+            pendingAccountChanged.store(true);
+        } else {
+            pendingTooltipRefresh.store(true);
+        }
     }).detach();
 }
 
@@ -660,12 +701,15 @@ void AppState::UpdateActiveCharacter(const std::string& newCharacterName) {
     }
 
     characterName = newCharacterName;
-    if (accountRegistry.ResolveActiveAccount(newCharacterName, gw2Api)) {
+    if (accountRegistry.ResolveActiveAccountFromCache(newCharacterName)) {
         OnActiveAccountChanged();
     } else {
         accountName = accountRegistry.ActiveAccountName().value_or("");
         mentorProgress.SetActiveAccount(accountName);
         if (api) QuickAccessService::Refresh(api, *this);
+        if (!newCharacterName.empty()) {
+            RequestAccountResolve();
+        }
     }
 }
 
@@ -679,7 +723,7 @@ void AppState::RegisterApiKey(const std::string& apiKey) {
                                                       result.message.c_str());
                                          }
                                          if (result.success) {
-                                             pendingAccountRefresh.store(true);
+                                             pendingCharacterResolve.store(true);
                                          }
                                      });
 }
