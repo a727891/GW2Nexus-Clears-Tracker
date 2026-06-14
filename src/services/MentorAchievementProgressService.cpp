@@ -76,6 +76,13 @@ void MentorAchievementProgressService::SetActiveAccount(const std::string& accou
 
     if (const auto it = accountProgress_.find(accountName); it != accountProgress_.end()) {
         progress_ = it->second;
+        return;
+    }
+
+    // Migrate legacy single-account cache (Blish / early Nexus format keyed as "").
+    if (const auto legacy = accountProgress_.find(""); legacy != accountProgress_.end()) {
+        progress_ = legacy->second;
+        accountProgress_[accountName] = progress_;
     }
 }
 
@@ -146,11 +153,13 @@ void MentorAchievementProgressService::SaveAccountSlice(const std::string& accou
     SaveCache();
 }
 
-void MentorAchievementProgressService::RefreshFromApi(Gw2ApiClient& api, bool enabled) {
-    if (!enabled || mentorMaxById_.empty()) return;
+std::vector<MentorProgressChange> MentorAchievementProgressService::RefreshFromApi(
+    Gw2ApiClient& api, bool enabled) {
+    std::vector<MentorProgressChange> increases;
+    if (!enabled || mentorMaxById_.empty()) return increases;
 
     const auto token = api.FetchTokenInfo();
-    if (!token.valid) return;
+    if (!token.valid) return increases;
 
     bool hasAccount = false;
     bool hasProgression = false;
@@ -158,10 +167,10 @@ void MentorAchievementProgressService::RefreshFromApi(Gw2ApiClient& api, bool en
         if (perm == "account") hasAccount = true;
         if (perm == "progression") hasProgression = true;
     }
-    if (!hasAccount || !hasProgression) return;
+    if (!hasAccount || !hasProgression) return increases;
 
     const auto achievements = api.FetchAccountAchievements();
-    if (!achievements) return;
+    if (!achievements) return increases;
 
     std::unordered_map<int, MentorProgressEntry> updated;
     for (const auto& ach : *achievements) {
@@ -189,7 +198,15 @@ void MentorAchievementProgressService::RefreshFromApi(Gw2ApiClient& api, bool en
                 }
             }
         }
+
         if (changed) {
+            for (const auto& [id, entry] : updated) {
+                const auto it = progress_.find(id);
+                if (it != progress_.end() && entry.current > it->second.current) {
+                    increases.push_back({id, it->second.current, entry.current});
+                }
+            }
+
             progress_ = std::move(updated);
             if (!activeAccount_.empty()) {
                 accountProgress_[activeAccount_] = progress_;
@@ -200,6 +217,8 @@ void MentorAchievementProgressService::RefreshFromApi(Gw2ApiClient& api, bool en
     if (changed) {
         SaveCache();
     }
+
+    return increases;
 }
 
 std::optional<MentorProgressEntry> MentorAchievementProgressService::GetProgress(

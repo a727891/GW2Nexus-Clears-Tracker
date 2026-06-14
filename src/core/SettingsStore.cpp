@@ -66,6 +66,14 @@ void SettingsStore::Load(const std::string& path) {
             panelLayout = PanelLayout::Vertical;
         }
     }
+    if (j.contains("groupLabelDisplay")) {
+        const auto value = j["groupLabelDisplay"].get<std::string>();
+        if (value == "Hidden") {
+            groupLabelDisplay = GroupLabelDisplay::Hidden;
+        } else {
+            groupLabelDisplay = GroupLabelDisplay::Abbreviation;
+        }
+    }
     if (j.contains("keybindToggleRaids")) {
         keybindToggleRaids = j["keybindToggleRaids"].get<bool>();
     }
@@ -100,11 +108,26 @@ void SettingsStore::Load(const std::string& path) {
     if (j.contains("lockPanelPosition")) {
         lockPanelPosition = j["lockPanelPosition"].get<bool>();
     }
+    if (j.contains("screenClamp")) {
+        screenClamp = j["screenClamp"].get<bool>();
+    }
     if (j.contains("enableTooltips")) {
         enableTooltips = j["enableTooltips"].get<bool>();
     }
     if (j.contains("showMentorProgress")) {
         showMentorProgress = j["showMentorProgress"].get<bool>();
+    }
+    if (j.contains("showMentorProgressPopup")) {
+        showMentorProgressPopup = j["showMentorProgressPopup"].get<bool>();
+    }
+    if (j.contains("mentorProgressPopupReposition")) {
+        mentorProgressPopupReposition = j["mentorProgressPopupReposition"].get<bool>();
+    }
+    if (j.contains("mentorProgressPopupPosX")) {
+        mentorProgressPopupPosX = j["mentorProgressPopupPosX"].get<float>();
+    }
+    if (j.contains("mentorProgressPopupPosY")) {
+        mentorProgressPopupPosY = j["mentorProgressPopupPosY"].get<float>();
     }
     if (j.contains("lastShownMotdId")) {
         lastShownMotdId = j["lastShownMotdId"].get<std::string>();
@@ -166,6 +189,8 @@ void SettingsStore::Save(const std::string& path) const {
         {"fractalsPanel", WindowToJson(fractalsPanel)},
         {"dungeonsPanel", WindowToJson(dungeonsPanel)},
         {"panelLayout", panelLayout == PanelLayout::Horizontal ? "Horizontal" : "Vertical"},
+        {"groupLabelDisplay",
+         groupLabelDisplay == GroupLabelDisplay::Hidden ? "Hidden" : "Abbreviation"},
         {"keybindToggleRaids", keybindToggleRaids},
         {"keybindToggleStrikes", keybindToggleStrikes},
         {"keybindToggleFractals", keybindToggleFractals},
@@ -177,8 +202,13 @@ void SettingsStore::Save(const std::string& path) const {
         {"anchorFractalsToStrikesPanel", anchorFractalsToStrikesPanel},
         {"organicGridBoxBackgrounds", organicGridBoxBackgrounds},
         {"lockPanelPosition", lockPanelPosition},
+        {"screenClamp", screenClamp},
         {"enableTooltips", enableTooltips},
         {"showMentorProgress", showMentorProgress},
+        {"showMentorProgressPopup", showMentorProgressPopup},
+        {"mentorProgressPopupReposition", mentorProgressPopupReposition},
+        {"mentorProgressPopupPosX", mentorProgressPopupPosX},
+        {"mentorProgressPopupPosY", mentorProgressPopupPosY},
         {"lastShownMotdId", lastShownMotdId},
         {"fractalChallengeMotes", fractalChallengeMotes},
         {"fractalDailyTierN", fractalDailyTierN},

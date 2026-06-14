@@ -16,7 +16,7 @@ enum class PanelRole {
 
 bool Begin(const char* id, WindowState& state, ImVec2 contentSize, PanelRole role,
            bool lockPosition);
-bool End(PanelRole role);
+bool End(PanelRole role, bool screenClamp, uint32_t screenWidth, uint32_t screenHeight);
 bool IsDragging(PanelRole role);
 
 }  // namespace OverlayPanel

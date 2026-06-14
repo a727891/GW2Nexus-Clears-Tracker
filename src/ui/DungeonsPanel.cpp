@@ -36,7 +36,8 @@ void Render(AppState& state) {
     std::lock_guard lock(state.dataMutex);
     const auto visibleGroups = FilterDungeonGroups(state.dungeonGroups, state.settings);
     const auto placement = GridLayout::ComputePlacement(
-        visibleGroups, state.settings.panelLayout, state.settings.panelScale);
+        visibleGroups, state.settings.panelLayout, state.settings.panelScale,
+        state.settings.groupLabelDisplay);
 
     if (!OverlayPanel::Begin("Dungeon Clears", state.settings.dungeonsPanel, placement.contentSize,
                              OverlayPanel::PanelRole::Dungeons,
@@ -47,7 +48,10 @@ void Render(AppState& state) {
     ImFont* font = UiFontService::GetGridFont(state.nexusLink);
     GridDrawContext context{&state.raidData, &state.strikeData, &state.mentorProgress, false};
     GridRenderer::DrawGroups(visibleGroups, state.settings, true, true, font, context, true);
-    OverlayPanel::End(OverlayPanel::PanelRole::Dungeons);
+    const uint32_t screenW = state.nexusLink ? state.nexusLink->Width : 0;
+    const uint32_t screenH = state.nexusLink ? state.nexusLink->Height : 0;
+    OverlayPanel::End(OverlayPanel::PanelRole::Dungeons, state.settings.screenClamp, screenW,
+                      screenH);
 }
 
 }  // namespace DungeonsPanel

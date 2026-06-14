@@ -20,16 +20,4 @@ namespace DungeonsPanel {
     void Render(AppState& state);
 }
 
-namespace OptionsPanel {
-    void Render(AppState& state);
-}
-
-namespace EncounterSelectionPanel {
-    void Render(AppState& state);
-}
-
-namespace LabelCustomizationPanel {
-    void Render(AppState& state);
-}
-
 }  // namespace rc

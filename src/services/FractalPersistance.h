@@ -15,6 +15,7 @@ public:
     std::map<std::string, std::map<std::string, std::chrono::system_clock::time_point>>
         accountClears;
     std::unordered_map<std::string, std::string> encounterLabels;
+    std::unordered_map<std::string, bool> challengeMoteVisible;
 
     void Load(const std::string& path, const FractalMapData& fractalData);
     void Save(const std::string& path) const;
@@ -26,6 +27,10 @@ public:
     std::string GetEncounterLabel(const std::string& encounterId,
                                   const std::string& defaultAbbrev) const;
     void SetEncounterLabel(const std::string& encounterId, const std::string& label);
+
+    void EnsureChallengeMoteDefaults(const FractalMapData& fractalData);
+    bool IsChallengeMoteVisible(const std::string& apiLabel) const;
+    void SetChallengeMoteVisible(const std::string& apiLabel, bool visible);
 };
 
 }  // namespace rc

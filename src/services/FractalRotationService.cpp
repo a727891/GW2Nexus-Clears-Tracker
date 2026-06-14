@@ -70,11 +70,13 @@ std::vector<GridGroup> FractalRotationService::BuildGroups(const FractalMapData&
         std::vector<EncounterCell> cells;
         for (const int scale : data.challengeMotes) {
             const auto map = data.GetFractalForScale(scale);
-            if (map.IsValid()) {
-                cells.push_back(MakeCell(map, labels));
-            }
+            if (!map.IsValid()) continue;
+            if (labels && !labels->IsChallengeMoteVisible(map.apiLabel)) continue;
+            cells.push_back(MakeCell(map, labels));
         }
-        groups.push_back(MakeGroup("CM", "Challenge Mote", "CM", std::move(cells), labels));
+        if (!cells.empty()) {
+            groups.push_back(MakeGroup("CM", "Challenge Mote", "CM", std::move(cells), labels));
+        }
     }
 
     if (settings.fractalTomorrowTierN) {

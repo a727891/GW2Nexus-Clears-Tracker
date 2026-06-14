@@ -12,6 +12,7 @@
 #include "services/StrikeClearsService.h"
 #include "ui/GridMaskService.h"
 #include "ui/QuickAccessService.h"
+#include "ui/MentorProgressPopupService.h"
 #include "ui/UiFontService.h"
 
 #include <filesystem>
@@ -113,12 +114,6 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     rc::GridMaskService::Initialize(api, addonDir);
     rc::DatAssetIconService::Initialize(api, addonDir);
 
-    const auto mentorCachePath =
-        (std::filesystem::path(addonDir) / "clearsTracker" / "mentor_achievement_progress.json")
-            .string();
-    mentorProgress.Initialize(raidData, mentorCachePath);
-    mentorProgress.LoadCache();
-
     apiPoll.SetIntervalMinutes(settings.pollIntervalMinutes);
     apiPoll.SetCallback([this]() { RequestApiRefresh(); });
 
@@ -178,6 +173,7 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     strikePersist.Load(strikePersistPath, strikeData);
     if (fractalDataReady) {
         fractalPersist.Load(fractalPersistPath, fractalMapData);
+        fractalPersist.EnsureChallengeMoteDefaults(fractalMapData);
         fractalMapWatcher.DispatchCurrentFractalClears();
     }
     if (staticDataReady) {
@@ -242,6 +238,7 @@ void AppState::LoadStaticDataWithNetwork() {
                 (std::filesystem::path(addonDir) / "clearsTracker" / "fractal_clears.json")
                     .string();
             fractalPersist.Load(fractalPersistPath, fractalMapData);
+            fractalPersist.EnsureChallengeMoteDefaults(fractalMapData);
             fractalMapWatcher.DispatchCurrentFractalClears();
         }
         if (api) {
@@ -465,6 +462,8 @@ void AppState::RefreshTooltipServices() {
         (std::filesystem::path(addonDir) / "clearsTracker" / "mentor_achievement_progress.json")
             .string();
     mentorProgress.Initialize(raidData, mentorCachePath);
+    mentorProgress.LoadCache();
+    mentorProgress.SetActiveAccount(accountName);
     DatAssetIconService::PreloadIndicators(raidData.powerDamageAssetId, raidData.condiDamageAssetId,
                                            raidData.defianceAssetId, raidData.mentorAssetId);
 }
@@ -542,7 +541,10 @@ void AppState::OnApiPoll() {
         ApplyDailyBountyClears();
     }
 
-    mentorProgress.RefreshFromApi(gw2Api, settings.showMentorProgress);
+    const auto mentorChanges = mentorProgress.RefreshFromApi(gw2Api, settings.showMentorProgress);
+    if (settings.showMentorProgress && settings.showMentorProgressPopup) {
+        MentorProgressPopupService::OnProgressIncreased(*this, mentorChanges);
+    }
 
     if (auto dungeonClears = gw2Api.FetchDungeonClears()) {
         std::lock_guard lock(dataMutex);

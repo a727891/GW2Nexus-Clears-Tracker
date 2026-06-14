@@ -5,7 +5,8 @@ namespace rc {
 class AppState;
 
 namespace EncounterSelectionPanel {
-    void Render(AppState& state);
+void RenderRaidSelection(AppState& state);
+void RenderStrikeSelection(AppState& state);
 }
 
 }  // namespace rc

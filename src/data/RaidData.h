@@ -43,6 +43,7 @@ struct RaidWing {
 struct ExpansionRaid {
     std::string id;
     std::string name;
+    std::string asset;
     std::vector<RaidWing> wings;
 };
 
@@ -60,6 +61,7 @@ public:
     static RaidData FromJson(const nlohmann::json& j);
     const BossEncounter* GetEncounterByApiId(const std::string& apiId) const;
     const BossEncounter* GetEncounterById(const std::string& id) const;
+    const BossEncounter* GetEncounterByMentorAchievementId(int achievementId) const;
     const RaidWing* GetWingById(const std::string& wingId) const;
     bool IsEventEncounter(const std::string& apiId) const;
 };

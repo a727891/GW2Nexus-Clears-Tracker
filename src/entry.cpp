@@ -1,4 +1,5 @@
 #include "core/AppState.h"
+#include "core/Branding.h"
 #include "core/MumbleIdentity.h"
 #include "core/PanelVisibility.h"
 #include "ui/QuickAccessService.h"
@@ -6,6 +7,8 @@
 #include <imgui.h>
 #include "mumble/Mumble.h"
 #include "nexus/Nexus.h"
+#include "ui/OptionsPanel.h"
+#include "ui/MentorProgressPopupService.h"
 #include "ui/RaidPanel.h"
 #include <windows.h>
 
@@ -96,6 +99,7 @@ void AddonRender() {
     rc::StrikesPanel::Render(state);
     rc::FractalsPanel::Render(state);
     rc::DungeonsPanel::Render(state);
+    rc::MentorProgressPopupService::Render(state);
 }
 
 void AddonOptions() { rc::OptionsPanel::Render(rc::AppState::Instance()); }
@@ -110,10 +114,10 @@ extern "C" __declspec(dllexport) AddonDefinition_t* GetAddonDef() {
     if (!initialized) {
         def.Signature = -2024061201;
         def.APIVersion = NEXUS_API_VERSION;
-        def.Name = "Nexus Raid Clears";
+        def.Name = rc::kDisplayName;
         def.Version = {1, 0, 0, 0};
         def.Author = "Soeed";
-        def.Description = "Raid wing and raid encounter clear overlay panels for Guild Wars 2.";
+        def.Description = rc::kDescription;
         def.Load = AddonLoad;
         def.Unload = AddonUnload;
         def.Flags = AF_None;

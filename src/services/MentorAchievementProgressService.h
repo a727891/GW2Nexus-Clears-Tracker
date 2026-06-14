@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace rc {
 
@@ -17,6 +18,14 @@ struct MentorProgressEntry {
     bool done = false;
 };
 
+struct MentorProgressChange {
+    int achievementId = 0;
+    int previousCurrent = 0;
+    int newCurrent = 0;
+
+    int Delta() const { return newCurrent - previousCurrent; }
+};
+
 class MentorAchievementProgressService {
 public:
     static constexpr int kDefaultMax = 1000;
@@ -25,7 +34,7 @@ public:
     void SetActiveAccount(const std::string& accountName);
     void LoadCache();
     void SaveCache() const;
-    void RefreshFromApi(Gw2ApiClient& api, bool enabled);
+    std::vector<MentorProgressChange> RefreshFromApi(Gw2ApiClient& api, bool enabled);
 
     std::optional<MentorProgressEntry> GetProgress(int achievementId) const;
     int GetMaxForAchievement(int achievementId) const;

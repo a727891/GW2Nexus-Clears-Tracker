@@ -21,11 +21,14 @@ void Render(AppState& state) {
     const auto visibleStrikeGroups = EncounterVisibilityFilter::FilterStrikeGroups(
         state.strikeGroups, state.strikeVisibility);
     const auto raidPlacement = GridLayout::ComputePlacement(
-        visibleRaidGroups, state.settings.panelLayout, state.settings.panelScale);
+        visibleRaidGroups, state.settings.panelLayout, state.settings.panelScale,
+        state.settings.groupLabelDisplay);
     const auto strikePlacement = GridLayout::ComputePlacement(
-        visibleStrikeGroups, state.settings.panelLayout, state.settings.panelScale);
+        visibleStrikeGroups, state.settings.panelLayout, state.settings.panelScale,
+        state.settings.groupLabelDisplay);
     const auto fractalPlacement = GridLayout::ComputePlacement(
-        state.fractalGroups, state.settings.panelLayout, state.settings.panelScale);
+        state.fractalGroups, state.settings.panelLayout, state.settings.panelScale,
+        state.settings.groupLabelDisplay);
 
     if (state.settings.anchorFractalsToStrikesPanel &&
         !OverlayPanel::IsDragging(OverlayPanel::PanelRole::Fractals)) {
@@ -45,7 +48,10 @@ void Render(AppState& state) {
     ImFont* font = UiFontService::GetGridFont(state.nexusLink);
     GridDrawContext context{&state.raidData, &state.strikeData, &state.mentorProgress, false};
     GridRenderer::DrawGroups(state.fractalGroups, state.settings, true, true, font, context);
-    if (OverlayPanel::End(OverlayPanel::PanelRole::Fractals)) {
+    const uint32_t screenW = state.nexusLink ? state.nexusLink->Width : 0;
+    const uint32_t screenH = state.nexusLink ? state.nexusLink->Height : 0;
+    if (OverlayPanel::End(OverlayPanel::PanelRole::Fractals, state.settings.screenClamp, screenW,
+                          screenH)) {
         PanelAnchor::OnFractalsDragged(state.settings, raidPlacement.contentSize,
                                        strikePlacement.contentSize);
     }

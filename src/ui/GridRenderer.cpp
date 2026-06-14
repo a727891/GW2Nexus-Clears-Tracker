@@ -7,6 +7,7 @@
 
 #include <imgui.h>
 #include <optional>
+#include <string>
 
 namespace rc {
 namespace GridRenderer {
@@ -98,6 +99,11 @@ uint32_t LabelTextColor(const GridGroup& group,
     return settings.colorText.ToImU32(1.0f);
 }
 
+std::string GroupLabelText(const GridGroup& group, GroupLabelDisplay /*mode*/) {
+    if (!group.abbreviation.empty()) return group.abbreviation;
+    return group.name;
+}
+
 void DrawCellBackground(ImDrawList* draw,
                         const ImVec2& p0,
                         float width,
@@ -179,8 +185,6 @@ void DrawEncounterCellAt(const ImVec2& p0,
         } else if (ImGui::IsMouseHoveringRect(p0, p1)) {
             ImGui::SetTooltip("%s", cell.name.c_str());
         }
-    } else if (ImGui::IsMouseHoveringRect(p0, p1)) {
-        ImGui::SetTooltip("%s", cell.name.c_str());
     }
 }
 
@@ -208,7 +212,7 @@ void DrawLabelCellAt(const ImVec2& p0,
     }
     DrawTextAt(draw, ImVec2(textX, p0.y + (cellHeight - textSize.y) * 0.5f),
                ApplyOpacity(textColor, settings.labelOpacity), abbreviation, font, fontSize);
-    if (ImGui::IsMouseHoveringRect(p0, p1)) {
+    if (settings.enableTooltips && ImGui::IsMouseHoveringRect(p0, p1)) {
         ImGui::SetTooltip("%s", tooltip);
     }
 }
@@ -225,15 +229,14 @@ void DrawGroupAt(const ImVec2& contentOrigin,
                  uint32_t textColor,
                  const GridDrawContext& context,
                  bool useDungeonFrequenter) {
-    const char* wingLabel =
-        group.abbreviation.empty() ? group.name.c_str() : group.abbreviation.c_str();
+    const std::string groupLabel = GroupLabelText(group, settings.groupLabelDisplay);
 
     for (const auto& cell : placement.cells) {
         const ImVec2 p0(contentOrigin.x + placement.origin.x + cell.position.x,
                         contentOrigin.y + placement.origin.y + cell.position.y);
         if (cell.isLabel) {
-            DrawLabelCellAt(p0, cell.width, cellHeight, wingLabel, group.name.c_str(), group.id,
-                            placement.labelAlign, settings, font, fontSize, textColor);
+            DrawLabelCellAt(p0, cell.width, cellHeight, groupLabel.c_str(), group.name.c_str(),
+                            group.id, placement.labelAlign, settings, font, fontSize, textColor);
         } else if (cell.encounterIndex < group.encounters.size()) {
             DrawEncounterCellAt(p0, cell.width, cellHeight,
                                 group.encounters[cell.encounterIndex], group, settings, colorClears,
@@ -256,7 +259,8 @@ ImVec2 DrawGroups(const std::vector<GridGroup>& groups,
     const float fontSize = EffectiveFontSize(font, scale);
     const float cellHeight = GridLayout::Scaled(GridLayout::kCellHeight, scale);
     const PanelLayout layout = settings.panelLayout;
-    const auto placement = GridLayout::ComputePlacement(groups, layout, scale);
+    const auto placement =
+        GridLayout::ComputePlacement(groups, layout, scale, settings.groupLabelDisplay);
     const ImVec2 contentOrigin = ImGui::GetCursorScreenPos();
 
     ImGui::Dummy(placement.contentSize);

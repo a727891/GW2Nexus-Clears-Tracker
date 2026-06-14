@@ -36,6 +36,18 @@ ImVec2 Subtract(const ImVec2& a, const ImVec2& b) {
     return {a.x - b.x, a.y - b.y};
 }
 
+void ClampPosition(WindowState& state, const ImVec2& windowSize, uint32_t screenWidth,
+                   uint32_t screenHeight) {
+    if (screenWidth == 0 || screenHeight == 0) return;
+
+    const float maxX = static_cast<float>(screenWidth) - windowSize.x;
+    const float maxY = static_cast<float>(screenHeight) - windowSize.y;
+    if (state.posX < 0.0f) state.posX = 0.0f;
+    if (state.posY < 0.0f) state.posY = 0.0f;
+    if (state.posX > maxX) state.posX = maxX;
+    if (state.posY > maxY) state.posY = maxY;
+}
+
 int RoleIndex(PanelRole role) { return static_cast<int>(role); }
 
 DragState& DragFor(PanelRole role) { return g_dragStates[RoleIndex(role)]; }
@@ -71,7 +83,7 @@ bool Begin(const char* id, WindowState& state, ImVec2 contentSize, PanelRole rol
     return true;
 }
 
-bool End(PanelRole role) {
+bool End(PanelRole role, bool screenClamp, uint32_t screenWidth, uint32_t screenHeight) {
     bool dragged = false;
     if (g_windowState) {
         DragState& drag = DragFor(role);
@@ -97,8 +109,15 @@ bool End(PanelRole role) {
         }
 
         const ImVec2 pos = SnapPos(ImGui::GetWindowPos());
+        const ImVec2 size = ImGui::GetWindowSize();
         g_windowState->posX = pos.x;
         g_windowState->posY = pos.y;
+        if (screenClamp) {
+            ClampPosition(*g_windowState, size, screenWidth, screenHeight);
+            if (g_windowState->posX != pos.x || g_windowState->posY != pos.y) {
+                ImGui::SetWindowPos(SnapPos(ImVec2(g_windowState->posX, g_windowState->posY)));
+            }
+        }
     }
 
     g_dragging[RoleIndex(role)] = dragged;

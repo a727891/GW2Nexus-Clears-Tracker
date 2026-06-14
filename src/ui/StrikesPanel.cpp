@@ -21,9 +21,11 @@ void Render(AppState& state) {
     const auto visibleStrikeGroups = EncounterVisibilityFilter::FilterStrikeGroups(
         state.strikeGroups, state.strikeVisibility);
     const auto raidPlacement = GridLayout::ComputePlacement(
-        visibleRaidGroups, state.settings.panelLayout, state.settings.panelScale);
+        visibleRaidGroups, state.settings.panelLayout, state.settings.panelScale,
+        state.settings.groupLabelDisplay);
     const auto strikePlacement = GridLayout::ComputePlacement(
-        visibleStrikeGroups, state.settings.panelLayout, state.settings.panelScale);
+        visibleStrikeGroups, state.settings.panelLayout, state.settings.panelScale,
+        state.settings.groupLabelDisplay);
 
     if (state.settings.anchorStrikesToRaidPanel &&
         !OverlayPanel::IsDragging(OverlayPanel::PanelRole::Strikes)) {
@@ -39,7 +41,10 @@ void Render(AppState& state) {
     ImFont* font = UiFontService::GetGridFont(state.nexusLink);
     GridDrawContext context{&state.raidData, &state.strikeData, &state.mentorProgress, true};
     GridRenderer::DrawGroups(visibleStrikeGroups, state.settings, true, true, font, context);
-    if (OverlayPanel::End(OverlayPanel::PanelRole::Strikes)) {
+    const uint32_t screenW = state.nexusLink ? state.nexusLink->Width : 0;
+    const uint32_t screenH = state.nexusLink ? state.nexusLink->Height : 0;
+    if (OverlayPanel::End(OverlayPanel::PanelRole::Strikes, state.settings.screenClamp, screenW,
+                          screenH)) {
         PanelAnchor::OnStrikesDragged(state.settings, raidPlacement.contentSize,
                                        strikePlacement.contentSize);
     }

@@ -16,6 +16,7 @@ public:
     WindowState dungeonsPanel{true, 250.0f, 605.0f};
 
     PanelLayout panelLayout = PanelLayout::Vertical;
+    GroupLabelDisplay groupLabelDisplay = GroupLabelDisplay::Abbreviation;
     float panelScale = 1.0f;
 
     float labelOpacity = 1.0f;
@@ -34,8 +35,13 @@ public:
     bool anchorFractalsToStrikesPanel = false;
     bool organicGridBoxBackgrounds = true;
     bool lockPanelPosition = false;
+    bool screenClamp = true;
     bool enableTooltips = true;
     bool showMentorProgress = true;
+    bool showMentorProgressPopup = false;
+    bool mentorProgressPopupReposition = false;
+    float mentorProgressPopupPosX = -1.0f;
+    float mentorProgressPopupPosY = -1.0f;
     std::string lastShownMotdId;
 
     bool fractalChallengeMotes = true;

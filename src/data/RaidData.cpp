@@ -89,6 +89,7 @@ RaidData RaidData::FromJson(const nlohmann::json& j) {
         ExpansionRaid exp;
         exp.id = expJ.value("id", "");
         exp.name = expJ.value("name", "");
+        exp.asset = expJ.value("asset", "");
         if (!expJ.contains("wings")) continue;
         for (const auto& wingJ : expJ["wings"]) {
             RaidWing wing;
@@ -121,6 +122,19 @@ const BossEncounter* RaidData::GetEncounterById(const std::string& id) const {
         for (const auto& wing : exp.wings) {
             for (const auto& enc : wing.encounters) {
                 if (enc.EncounterId() == id) return &enc;
+            }
+        }
+    }
+    return nullptr;
+}
+
+const BossEncounter* RaidData::GetEncounterByMentorAchievementId(int achievementId) const {
+    for (const auto& exp : expansions) {
+        for (const auto& wing : exp.wings) {
+            for (const auto& enc : wing.encounters) {
+                if (enc.mentorAchievementId && *enc.mentorAchievementId == achievementId) {
+                    return &enc;
+                }
             }
         }
     }

@@ -1,0 +1,283 @@
+#include "ui/OptionsPanel.h"
+
+#include "core/AppState.h"
+#include "ui/OptionsCommon.h"
+#include "ui/OptionsTextureService.h"
+#include "ui/OptionsUiKit.h"
+#include "ui/QuickAccessService.h"
+
+#include <cstring>
+#include <imgui.h>
+#include <mutex>
+
+namespace rc {
+namespace OptionsGeneralTab {
+namespace {
+
+enum class Section { ApiSync = 0, CornerIcon, GlobalAppearance, Highlights, Colors };
+
+void RenderApiSync(AppState& state) {
+    using namespace OptionsUiKit;
+
+    SectionHeading("API & Sync");
+    SectionSubtext("Register GW2 API keys for clear tracking.");
+
+    static char apiKeyBuf[128] = {};
+    const bool registering = state.accountRegistry.IsRegistering();
+
+    ImGui::InputText("GW2 API Key", apiKeyBuf, sizeof(apiKeyBuf), ImGuiInputTextFlags_Password);
+    if (!registering && ImGui::Button("Register Key")) {
+        state.RegisterApiKey(apiKeyBuf);
+        apiKeyBuf[0] = '\0';
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Validates the key against the GW2 API and stores account name, key name, and "
+            "characters. Requires account, progression, and characters permissions.");
+    }
+
+    const auto status = state.accountRegistry.LastRegistrationMessage();
+    if (!status.empty()) {
+        ImGui::TextWrapped("%s", status.c_str());
+    }
+    if (registering) {
+        ImGui::TextDisabled("Registering API key...");
+    }
+
+    const auto accounts = state.accountRegistry.AccountsSnapshot();
+    const auto activeTokenId = state.accountRegistry.ActiveTokenId();
+
+    if (accounts.empty()) {
+        ImGui::TextDisabled("No API keys registered.");
+    } else if (ImGui::BeginTable("api_accounts", 4,
+                                  ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+        ImGui::TableSetupColumn("Key");
+        ImGui::TableSetupColumn("Account");
+        ImGui::TableSetupColumn("Chars");
+        ImGui::TableSetupColumn("Actions");
+        ImGui::TableHeadersRow();
+
+        for (const auto& account : accounts) {
+            ImGui::TableNextRow();
+            ImGui::PushID(account.tokenId.c_str());
+
+            ImGui::TableNextColumn();
+            std::string keyLabel = account.keyName;
+            if (activeTokenId && *activeTokenId == account.tokenId) {
+                keyLabel += " (active)";
+            }
+            ImGui::TextUnformatted(keyLabel.c_str());
+
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted(account.accountName.c_str());
+
+            ImGui::TableNextColumn();
+            ImGui::Text("%zu", account.characters.size());
+
+            ImGui::TableNextColumn();
+            if (ImGui::Button("Remove")) {
+                state.RemoveApiKey(account.tokenId);
+            }
+
+            ImGui::PopID();
+        }
+
+        ImGui::EndTable();
+    }
+
+    if (!state.characterName.empty()) {
+        ImGui::Text("Character: %s", state.characterName.c_str());
+    } else {
+        ImGui::TextDisabled("Character: (not in game)");
+    }
+
+    if (!state.accountName.empty()) {
+        ImGui::Text("Active account: %s", state.accountName.c_str());
+    } else if (!state.characterName.empty()) {
+        WarningText(
+            "No registered key matches the current character. API clears unavailable.");
+    } else {
+        ImGui::TextDisabled("Active account: (none)");
+    }
+
+    ImGui::Spacing();
+    int pollMinutes = state.settings.pollIntervalMinutes;
+    if (SettingSliderInt("API poll interval (min)", &pollMinutes, 1, 30,
+                         "How often clears are refreshed from the GW2 API.")) {
+        state.settings.pollIntervalMinutes = pollMinutes;
+        state.apiPoll.SetIntervalMinutes(pollMinutes);
+    }
+
+    if (ImGui::Button("Refresh Now")) {
+        state.RequestApiRefresh();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Immediately fetch clears from the GW2 API for the active account.");
+    }
+}
+
+void RenderCornerIcon(AppState& state) {
+    using namespace OptionsUiKit;
+
+    SectionHeading("Corner Icon");
+    SectionSubtext("Quick-access corner icon shortcut (ALT+SHIFT+R).");
+
+    if (SettingCheckbox("Show corner icon", &state.settings.cornerIconEnabled,
+                        "Shows the quick-access corner icon for panel toggles and MOTD.")) {
+        if (state.api) {
+            QuickAccessService::SyncVisibility(state.api, state);
+        }
+    }
+
+    ImGui::Spacing();
+    SectionSubtext("Panel visibility shortcut (NRC_TOGGLE_PANELS)");
+    SettingCheckbox("Toggle raid panel on keybind / corner icon click",
+                    &state.settings.keybindToggleRaids);
+    SettingCheckbox("Toggle raid encounters on keybind / corner icon click",
+                    &state.settings.keybindToggleStrikes);
+    SettingCheckbox("Toggle fractals on keybind / corner icon click",
+                    &state.settings.keybindToggleFractals);
+    SettingCheckbox("Toggle dungeons on keybind / corner icon click",
+                    &state.settings.keybindToggleDungeons);
+}
+
+void RenderGlobalAppearance(AppState& state) {
+    using namespace OptionsUiKit;
+
+    SectionHeading("Global Appearance");
+    SectionSubtext("These settings apply to all overlay panels.");
+
+    const char* layoutLabels[] = {"Vertical", "Horizontal"};
+    int layoutIndex = state.settings.panelLayout == PanelLayout::Horizontal ? 1 : 0;
+    if (SettingCombo("Panel layout", &layoutIndex, layoutLabels, 2,
+                     "Arrange encounter cells vertically or horizontally.")) {
+        state.settings.panelLayout =
+            layoutIndex == 1 ? PanelLayout::Horizontal : PanelLayout::Vertical;
+        if (state.settings.anchorStrikesToRaidPanel || state.settings.anchorFractalsToStrikesPanel) {
+            RealignAnchoredPanels(state);
+        }
+    }
+
+    const char* groupLabelLabels[] = {"Show", "Hidden"};
+    int groupLabelIndex = state.settings.groupLabelDisplay == GroupLabelDisplay::Hidden ? 1 : 0;
+    if (SettingCombo("Group label display", &groupLabelIndex, groupLabelLabels, 2,
+                     "Controls the category label column on overlay panels.\n"
+                     "Show: custom or default short names.\n"
+                     "Hidden: hide category labels and reclaim the space.")) {
+        state.settings.groupLabelDisplay =
+            groupLabelIndex == 1 ? GroupLabelDisplay::Hidden : GroupLabelDisplay::Abbreviation;
+        if (state.settings.anchorStrikesToRaidPanel || state.settings.anchorFractalsToStrikesPanel) {
+            RealignAnchoredPanels(state);
+        }
+    }
+
+    SettingCheckbox("Clamp panels to screen", &state.settings.screenClamp,
+                    "Keeps overlay panels within the game window when dragged.");
+
+    SettingCheckbox("GW2 style background boxes", &state.settings.organicGridBoxBackgrounds,
+                    "Cell backgrounds styled like GW2 watercolor brush strokes.");
+
+    SettingCheckbox("Enable mouse hover tooltips", &state.settings.enableTooltips,
+                    "Shows enhanced encounter tooltips with boss icons and mechanic indicators.");
+
+    if (SettingSliderFloat("Panel scale", &state.settings.panelScale, 0.5f, 2.0f, "%.2f",
+                           "Scale all overlay panels.")) {
+        if (state.settings.anchorStrikesToRaidPanel || state.settings.anchorFractalsToStrikesPanel) {
+            RealignAnchoredPanels(state);
+        }
+    }
+
+    SettingSliderFloat("Label opacity", &state.settings.labelOpacity, 0.1f, 1.0f, "%.2f",
+                       "Opacity for wing and group label cells.");
+
+    SettingSliderFloat("Grid opacity", &state.settings.gridOpacity, 0.1f, 1.0f, "%.2f",
+                       "Opacity for encounter cells.");
+
+    SettingSliderFloat("Grid background opacity", &state.settings.panelBackgroundOpacity, 0.0f,
+                       1.0f, "%.2f", "Opacity for the panel background behind the grid.");
+
+    ImGui::Spacing();
+    RenderGridPreview(state.settings);
+}
+
+void RenderHighlights(AppState& state) {
+    using namespace OptionsUiKit;
+
+    SectionHeading("Highlights");
+    SectionSubtext("Weekly and bounty highlight behavior. Colors are configured in the Colors section.");
+
+    if (SettingCheckbox("Highlight non-weekly bounty encounters",
+                        &state.settings.highlightNonWeeklyBounty,
+                        "Uncleared raid wing and raid encounter bosses that will not be daily "
+                        "bounties for the rest of the week are highlighted.")) {
+        std::lock_guard lock(state.dataMutex);
+        state.ApplyNonWeeklyHighlights();
+    }
+
+    if (SettingCheckbox("Omit event encounters from highlight", &state.settings.omitEventEncounters,
+                        "Excludes raid event encounters from non-weekly bounty highlighting.")) {
+        std::lock_guard lock(state.dataMutex);
+        state.ApplyNonWeeklyHighlights();
+    }
+
+    SettingCheckbox("Highlight Emboldened raid wing", &state.settings.highlightEmbolden,
+                    "Colors wing and encounter labels for the weekly Emboldened raid wing.");
+
+    SettingCheckbox("Highlight Call of the Mists raid wing", &state.settings.highlightCotm,
+                    "Colors wing and encounter labels for the weekly Call of the Mists raid wing.");
+}
+
+void RenderColors(AppState& state) {
+    using namespace OptionsUiKit;
+
+    SectionHeading("Clear State Colors");
+    SettingColorRgb("Label text color", state.settings.colorText,
+                    "Default color for wing and encounter label text.");
+    SettingColorRgb("Cleared color", state.settings.colorCleared);
+    SettingColorRgb("Not cleared color", state.settings.colorNotCleared);
+    SettingColorRgb("Unknown color", state.settings.colorUnknown);
+
+    SectionHeading("Highlight Colors");
+    SettingColorRgb("Non-weekly bounty color", state.settings.colorNonWeeklyBounty,
+                    "Color for encounters highlighted as non-weekly bounties.");
+    SettingColorRgb("Emboldened text color", state.settings.colorEmbolden);
+    SettingColorRgb("Call of the Mists text color", state.settings.colorCotm);
+}
+
+}  // namespace
+
+void Render(AppState& state, int& section) {
+    using namespace OptionsUiKit;
+
+    static const char* kSections[] = {"API & Sync", "Corner Icon", "Global Appearance",
+                                      "Highlights", "Colors"};
+
+    BeginTabPage(section, kSections, 5);
+    ImGui::PushID("general");
+    BeginContentPanel(OptionsTextureService::BackgroundTexture());
+
+    switch (static_cast<Section>(section)) {
+        case Section::ApiSync:
+            RenderApiSync(state);
+            break;
+        case Section::CornerIcon:
+            RenderCornerIcon(state);
+            break;
+        case Section::GlobalAppearance:
+            RenderGlobalAppearance(state);
+            break;
+        case Section::Highlights:
+            RenderHighlights(state);
+            break;
+        case Section::Colors:
+            RenderColors(state);
+            break;
+    }
+
+    EndContentPanel();
+    ImGui::PopID();
+    EndTabPage();
+}
+
+}  // namespace OptionsGeneralTab
+}  // namespace rc

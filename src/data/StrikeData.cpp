@@ -34,6 +34,7 @@ StrikeData StrikeData::FromJson(const nlohmann::json& j) {
         exp.id = expJ.value("id", "");
         exp.name = expJ.value("name", "");
         exp.abbreviation = expJ.value("abbriviation", "");
+        exp.asset = expJ.value("asset", "");
         exp.resets = expJ.value("resets", "weekly");
         if (expJ.contains("missions")) {
             for (const auto& mJ : expJ["missions"]) {

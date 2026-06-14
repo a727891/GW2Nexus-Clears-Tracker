@@ -1,6 +1,7 @@
 #include "ui/LabelCustomizationPanel.h"
 
 #include "core/AppState.h"
+#include "ui/OptionsUiKit.h"
 
 #include <cstring>
 #include <imgui.h>
@@ -14,10 +15,6 @@ namespace {
 constexpr int kLabelBufferSize = 48;
 
 enum class LabelStore { Raid, Strike, Fractal };
-
-ImVec4 ColorFromRgb(uint8_t r, uint8_t g, uint8_t b) {
-    return ImVec4(r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
-}
 
 void SaveRaidSettings(AppState& state) {
     const auto path = state.addonDir + "/raid_settings.json";
@@ -65,6 +62,11 @@ void SetLabel(AppState& state, LabelStore store, const std::string& id, const st
     state.ApplyEncounterLabel(id, label);
 }
 
+float LabelInputWidth() {
+    constexpr const char* kSample = "MMMMMMMMMM";
+    return ImGui::CalcTextSize(kSample).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+}
+
 bool RenderLabelRow(AppState& state,
                     const std::string& id,
                     const std::string& name,
@@ -82,6 +84,7 @@ bool RenderLabelRow(AppState& state,
     std::strncpy(buffer, currentLabel.c_str(), sizeof(buffer) - 1);
 
     bool changed = false;
+    ImGui::SetNextItemWidth(LabelInputWidth());
     if (ImGui::InputText("##label", buffer, sizeof(buffer))) {
         changed = true;
     }
@@ -104,16 +107,24 @@ bool RenderLabelRow(AppState& state,
     return changed;
 }
 
+}  // namespace
+
 void RenderRaidLabels(AppState& state) {
-    if (!ImGui::CollapsingHeader("Customize raid labels")) return;
+    using namespace OptionsUiKit;
 
-    ImGui::TextWrapped(
-        "Change the short labels shown on the raid panel. Labels are saved per account.");
-    ImGui::Spacing();
+    if (!state.staticDataReady) {
+        DisabledGateText("Raid label customization loads after static data is ready.");
+        return;
+    }
 
-    const ImVec4 gold = ColorFromRgb(255, 200, 0);
-    const ImVec4 gray = ColorFromRgb(180, 180, 180);
-    const ImVec4 white = ColorFromRgb(255, 255, 255);
+    std::lock_guard lock(state.dataMutex);
+
+    SectionHeading("Customize Raid Labels");
+    SectionSubtext("Change the short labels shown on the raid panel. Labels are saved per account.");
+
+    const ImVec4 gold = GoldColor();
+    const ImVec4 gray = GrayColor();
+    const ImVec4 white = WhiteColor();
 
     for (const auto& exp : state.raidData.expansions) {
         ImGui::TextColored(gold, "%s", exp.name.c_str());
@@ -130,15 +141,22 @@ void RenderRaidLabels(AppState& state) {
 }
 
 void RenderStrikeLabels(AppState& state) {
-    if (!ImGui::CollapsingHeader("Customize raid encounter labels")) return;
+    using namespace OptionsUiKit;
 
-    ImGui::TextWrapped(
+    if (!state.staticDataReady) {
+        DisabledGateText("Raid encounter label customization loads after static data is ready.");
+        return;
+    }
+
+    std::lock_guard lock(state.dataMutex);
+
+    SectionHeading("Customize Raid Encounter Labels");
+    SectionSubtext(
         "Change the short labels shown on the raid encounters panel. Labels are saved per "
         "account.");
-    ImGui::Spacing();
 
-    const ImVec4 gold = ColorFromRgb(255, 200, 0);
-    const ImVec4 white = ColorFromRgb(255, 255, 255);
+    const ImVec4 gold = GoldColor();
+    const ImVec4 white = WhiteColor();
 
     if (state.dailyBountyData.enabled) {
         const std::string priorityId =
@@ -173,15 +191,25 @@ void RenderStrikeLabels(AppState& state) {
 }
 
 void RenderFractalLabels(AppState& state) {
-    if (!state.fractalDataReady) return;
-    if (!ImGui::CollapsingHeader("Customize fractal labels")) return;
+    using namespace OptionsUiKit;
 
-    ImGui::TextWrapped(
+    if (!state.staticDataReady) {
+        DisabledGateText("Fractal label customization loads after static data is ready.");
+        return;
+    }
+    if (!state.fractalDataReady) {
+        DisabledGateText("Fractal label customization loads after fractal map data is ready.");
+        return;
+    }
+
+    std::lock_guard lock(state.dataMutex);
+
+    SectionHeading("Customize Fractal Labels");
+    SectionSubtext(
         "Change the short labels shown on the fractals panel. Labels are saved per account.");
-    ImGui::Spacing();
 
-    const ImVec4 gold = ColorFromRgb(255, 200, 0);
-    const ImVec4 white = ColorFromRgb(255, 255, 255);
+    const ImVec4 gold = GoldColor();
+    const ImVec4 white = WhiteColor();
 
     static const struct {
         const char* id;
@@ -205,20 +233,6 @@ void RenderFractalLabels(AppState& state) {
         if (!map.IsValid()) continue;
         RenderLabelRow(state, map.apiLabel, map.label, map.shortLabel, LabelStore::Fractal, white);
     }
-}
-
-}  // namespace
-
-void Render(AppState& state) {
-    if (!state.staticDataReady) {
-        ImGui::TextDisabled("Label customization loads after static data is ready.");
-        return;
-    }
-
-    std::lock_guard lock(state.dataMutex);
-    RenderRaidLabels(state);
-    RenderStrikeLabels(state);
-    RenderFractalLabels(state);
 }
 
 }  // namespace LabelCustomizationPanel

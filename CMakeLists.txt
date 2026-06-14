@@ -86,10 +86,19 @@ set(SRC_FILES
     src/ui/RaidPanel.cpp
     src/ui/StrikesPanel.cpp
     src/ui/OptionsPanel.cpp
+    src/ui/OptionsUiKit.cpp
+    src/ui/OptionsTextureService.cpp
+    src/ui/OptionsCommon.cpp
+    src/ui/OptionsGeneralTab.cpp
+    src/ui/OptionsRaidsTab.cpp
+    src/ui/OptionsStrikesTab.cpp
+    src/ui/OptionsFractalsTab.cpp
+    src/ui/OptionsDungeonsTab.cpp
     src/ui/EncounterSelectionPanel.cpp
     src/ui/LabelCustomizationPanel.cpp
     src/ui/FractalsPanel.cpp
     src/ui/DungeonsPanel.cpp
+    src/ui/MentorProgressPopupService.cpp
     src/ui/QuickAccessService.cpp
 )
 

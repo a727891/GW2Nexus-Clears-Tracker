@@ -1,6 +1,7 @@
 #include "ui/QuickAccessService.h"
 
 #include "core/AppState.h"
+#include "core/Branding.h"
 
 #include <filesystem>
 #include <imgui.h>
@@ -22,6 +23,9 @@ std::string cachedTooltip_;
 void RenderContextMenu() {
     auto& settings = AppState::Instance().settings;
 
+    // ImGui::TextDisabled(kDisplayName);
+    ImGui::Separator();
+
     const char* raidsLabel = settings.raidPanel.visible ? "Hide Raid Panel" : "Show Raid Panel";
     if (ImGui::Selectable(raidsLabel)) {
         settings.raidPanel.visible = !settings.raidPanel.visible;
@@ -33,11 +37,6 @@ void RenderContextMenu() {
         settings.strikesPanel.visible = !settings.strikesPanel.visible;
     }
 
-    if (ImGui::Selectable("Refresh API")) {
-        AppState::Instance().RequestApiRefresh();
-    }
-
-    ImGui::Separator();
     const char* fractalsLabel =
         settings.fractalsPanel.visible ? "Hide Fractals" : "Show Fractals";
     if (ImGui::Selectable(fractalsLabel)) {
@@ -48,6 +47,14 @@ void RenderContextMenu() {
         settings.dungeonsPanel.visible ? "Hide Dungeons" : "Show Dungeons";
     if (ImGui::Selectable(dungeonsLabel)) {
         settings.dungeonsPanel.visible = !settings.dungeonsPanel.visible;
+    }
+
+    ImGui::Separator();
+    ImGui::MenuItem("Position lock", nullptr, &settings.lockPanelPosition);
+
+    ImGui::Separator();
+    if (ImGui::Selectable("Refresh API")) {
+        AppState::Instance().RequestApiRefresh();
     }
 }
 
@@ -60,7 +67,7 @@ void LoadTextures(AddonAPI_t* api, const std::string& addonDir) {
 }
 
 std::string BuildTooltip(const AppState& state) {
-    std::string tooltip = "Nexus Raid Clears";
+    std::string tooltip = kDisplayName;
     if (!state.characterName.empty()) {
         tooltip += "\nCharacter: " + state.characterName;
     }

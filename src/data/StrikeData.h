@@ -25,6 +25,7 @@ struct ExpansionStrikes {
     std::string id;
     std::string name;
     std::string abbreviation;
+    std::string asset;
     std::string resets = "weekly";
     std::vector<StrikeMission> missions;
 };

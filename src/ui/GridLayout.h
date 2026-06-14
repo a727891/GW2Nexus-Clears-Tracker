@@ -39,7 +39,8 @@ struct PanelPlacement {
 };
 
 PanelPlacement ComputePlacement(const std::vector<GridGroup>& groups, PanelLayout layout,
-                                float scale = 1.0f);
+                                float scale = 1.0f,
+                                GroupLabelDisplay labelDisplay = GroupLabelDisplay::Abbreviation);
 
 inline float Scaled(float value, float scale) { return value * scale; }
 

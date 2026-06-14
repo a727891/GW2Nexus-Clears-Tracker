@@ -62,10 +62,18 @@ void FractalPersistance::Load(const std::string& path, const FractalMapData& fra
     version = j.value("version", version);
     accountClears.clear();
     encounterLabels.clear();
+    challengeMoteVisible.clear();
     if (j.contains("encounterLabels") && j["encounterLabels"].is_object()) {
         for (const auto& [id, label] : j["encounterLabels"].items()) {
             if (label.is_string()) {
                 encounterLabels[id] = label.get<std::string>();
+            }
+        }
+    }
+    if (j.contains("challengeMotes") && j["challengeMotes"].is_object()) {
+        for (const auto& [id, visible] : j["challengeMotes"].items()) {
+            if (visible.is_boolean()) {
+                challengeMoteVisible[id] = visible.get<bool>();
             }
         }
     }
@@ -98,6 +106,12 @@ void FractalPersistance::Save(const std::string& path) const {
         labels[id] = label;
     }
     j["encounterLabels"] = labels;
+
+    nlohmann::json motes = nlohmann::json::object();
+    for (const auto& [id, visible] : challengeMoteVisible) {
+        motes[id] = visible;
+    }
+    j["challengeMotes"] = motes;
 
     std::filesystem::path p(path);
     if (p.has_parent_path()) {
@@ -135,6 +149,27 @@ std::string FractalPersistance::GetEncounterLabel(const std::string& encounterId
 void FractalPersistance::SetEncounterLabel(const std::string& encounterId,
                                           const std::string& label) {
     encounterLabels[encounterId] = label;
+}
+
+void FractalPersistance::EnsureChallengeMoteDefaults(const FractalMapData& fractalData) {
+    for (const int scale : fractalData.challengeMotes) {
+        const auto map = fractalData.GetFractalForScale(scale);
+        if (!map.IsValid()) continue;
+        if (challengeMoteVisible.find(map.apiLabel) == challengeMoteVisible.end()) {
+            challengeMoteVisible[map.apiLabel] = true;
+        }
+    }
+}
+
+bool FractalPersistance::IsChallengeMoteVisible(const std::string& apiLabel) const {
+    if (const auto it = challengeMoteVisible.find(apiLabel); it != challengeMoteVisible.end()) {
+        return it->second;
+    }
+    return true;
+}
+
+void FractalPersistance::SetChallengeMoteVisible(const std::string& apiLabel, bool visible) {
+    challengeMoteVisible[apiLabel] = visible;
 }
 
 }  // namespace rc
