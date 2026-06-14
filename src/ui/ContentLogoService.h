@@ -8,19 +8,17 @@
 
 namespace rc {
 
-namespace OptionsTextureService {
+namespace ContentLogoService {
 
-struct TextureInfo {
+struct LogoInfo {
     ImTextureID texture = nullptr;
     uint32_t width = 0;
     uint32_t height = 0;
 };
 
 void Initialize(AddonAPI_t* api, const std::string& addonDir);
-void RequestAssets();
-ImTextureID GetTexture(const std::string& filename);
-TextureInfo GetTextureInfo(const std::string& filename);
-ImTextureID BackgroundTexture();
+LogoInfo GetLogo(const char* expansionId);
+bool RenderLogo(const char* expansionId);
 
-}  // namespace OptionsTextureService
+}  // namespace ContentLogoService
 }  // namespace rc

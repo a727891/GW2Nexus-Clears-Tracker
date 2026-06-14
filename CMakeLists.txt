@@ -40,6 +40,31 @@ if(NOT imgui_POPULATED)
     target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 endif()
 
+file(GLOB LOGO_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/assets/logos/*.png")
+set(CORNER_ICON_FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/raidIconDark.png"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures/raidIconBright.png"
+)
+set(EMBEDDED_ASSETS_DIR "${CMAKE_BINARY_DIR}/generated")
+set(EMBEDDED_LOGOS_CPP "${EMBEDDED_ASSETS_DIR}/EmbeddedLogos.cpp")
+set(EMBEDDED_LOGOS_H "${EMBEDDED_ASSETS_DIR}/EmbeddedLogos.h")
+set(EMBEDDED_CORNER_ICONS_CPP "${EMBEDDED_ASSETS_DIR}/EmbeddedCornerIcons.cpp")
+set(EMBEDDED_CORNER_ICONS_H "${EMBEDDED_ASSETS_DIR}/EmbeddedCornerIcons.h")
+
+add_custom_command(
+    OUTPUT ${EMBEDDED_LOGOS_CPP} ${EMBEDDED_LOGOS_H}
+           ${EMBEDDED_CORNER_ICONS_CPP} ${EMBEDDED_CORNER_ICONS_H}
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${EMBEDDED_ASSETS_DIR}"
+    COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_assets.py"
+            --logos-dir "${CMAKE_CURRENT_SOURCE_DIR}/assets/logos"
+            --textures-dir "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures"
+            --output-dir "${EMBEDDED_ASSETS_DIR}"
+    DEPENDS ${LOGO_FILES} ${CORNER_ICON_FILES}
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_assets.py"
+    COMMENT "Embedding addon PNG assets into binary"
+    VERBATIM
+)
+
 set(SRC_FILES
     src/entry.cpp
     src/core/AppState.cpp
@@ -90,6 +115,7 @@ set(SRC_FILES
     src/ui/OptionsPanel.cpp
     src/ui/OptionsUiKit.cpp
     src/ui/OptionsTextureService.cpp
+    src/ui/ContentLogoService.cpp
     src/ui/OptionsCommon.cpp
     src/ui/OptionsGeneralTab.cpp
     src/ui/OptionsRaidsTab.cpp
@@ -102,15 +128,23 @@ set(SRC_FILES
     src/ui/DungeonsPanel.cpp
     src/ui/MentorProgressPopupService.cpp
     src/ui/QuickAccessService.cpp
+    ${EMBEDDED_LOGOS_CPP}
+    ${EMBEDDED_CORNER_ICONS_CPP}
 )
 
+add_custom_target(generate_embedded_assets
+    DEPENDS ${EMBEDDED_LOGOS_CPP} ${EMBEDDED_LOGOS_H}
+            ${EMBEDDED_CORNER_ICONS_CPP} ${EMBEDDED_CORNER_ICONS_H})
+
 add_library(NexusRaidClears SHARED ${SRC_FILES})
+add_dependencies(NexusRaidClears generate_embedded_assets)
 
 target_include_directories(NexusRaidClears PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/extern
     ${CMAKE_CURRENT_SOURCE_DIR}/extern/nexus
     ${CMAKE_CURRENT_SOURCE_DIR}/extern/mumble
+    ${CMAKE_BINARY_DIR}/generated
 )
 
 target_link_libraries(NexusRaidClears PRIVATE

@@ -38,7 +38,7 @@ void RenderRaidSelection(AppState& state) {
 
     for (const auto& exp : state.raidData.expansions) {
         ImGui::PushID(exp.id.c_str());
-        RenderExpansionBanner(exp.asset.c_str(), state);
+        BeginExpansionRow(exp.id.c_str());
 
         bool expansionVisible = state.raidVisibility.IsExpansionVisible(exp.id);
         if (ImGui::Checkbox(exp.name.c_str(), &expansionVisible)) {
@@ -80,6 +80,7 @@ void RenderRaidSelection(AppState& state) {
         }
         ImGui::Unindent(16.0f);
 
+        EndExpansionRow();
         ImGui::Separator();
         ImGui::PopID();
     }
@@ -117,7 +118,7 @@ void RenderStrikeSelection(AppState& state) {
 
     for (const auto& exp : state.strikeData.expansions) {
         ImGui::PushID(exp.id.c_str());
-        RenderExpansionBanner(exp.asset.c_str(), state);
+        BeginExpansionRow(exp.id.c_str());
 
         bool expansionVisible = state.strikeVisibility.IsExpansionVisible(exp.id);
         const std::string expansionLabel =
@@ -144,6 +145,7 @@ void RenderStrikeSelection(AppState& state) {
         }
         ImGui::Unindent(16.0f);
 
+        EndExpansionRow();
         ImGui::Separator();
         ImGui::PopID();
     }

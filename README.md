@@ -27,8 +27,10 @@ Track daily and weekly PvE clears — raids, strikes, fractals, and dungeons —
 4. Enter your API key in options and click **Save API Key**
 5. Enable the panels you want (Raids, Strikes, Fractals, Dungeons)
 
+Expansion logos and the corner icon are **embedded in the DLL** at build time. End users only need the single DLL file.
+
 On first run the addon downloads encounter metadata into
-`<GW2>/addons/NexusRaidClears/clearsTracker/`. Pre-seeding that folder avoids a
+`<GW2>/addons/NexusRaidClears/clearsTracker/`. Pre-seeding that JSON cache avoids a
 background download during load (see [Build & deploy](#build--deploy)).
 
 ## Build & deploy
@@ -58,8 +60,9 @@ Output: `build/NexusRaidClears.dll`
 ```
 
 Grid box masks are downloaded at runtime from the static host (not pre-seeded by
-the deploy script). Pre-seeding `NexusRaidClears/clearsTracker/` JSON avoids
-blocking on first load for encounter metadata.
+the deploy script). Logos and the corner icon are embedded in the DLL. Pre-seeding
+`NexusRaidClears/clearsTracker/` JSON avoids blocking on first load for encounter
+metadata.
 
 A local deploy helper script may exist on your machine; it is not required for
 end users.

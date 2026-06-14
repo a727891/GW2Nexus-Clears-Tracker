@@ -2,6 +2,7 @@
 
 #include "core/AppState.h"
 #include "core/Branding.h"
+#include "EmbeddedCornerIcons.h"
 
 #include <filesystem>
 #include <imgui.h>
@@ -58,12 +59,32 @@ void RenderContextMenu() {
     }
 }
 
+bool LoadTextureFromMemory(AddonAPI_t* api, const char* identifier) {
+    if (!api || !api->Textures_GetOrCreateFromMemory) return false;
+
+    const EmbeddedCornerIcons::Asset* asset = EmbeddedCornerIcons::Find(identifier);
+    if (!asset) return false;
+
+    return api->Textures_GetOrCreateFromMemory(
+               identifier, const_cast<unsigned char*>(asset->data), asset->size) != nullptr;
+}
+
+bool LoadTextureFromFile(AddonAPI_t* api,
+                         const char* identifier,
+                         const std::filesystem::path& path) {
+    if (!api || !api->Textures_GetOrCreateFromFile) return false;
+    if (!std::filesystem::exists(path)) return false;
+    return api->Textures_GetOrCreateFromFile(identifier, path.string().c_str()) != nullptr;
+}
+
 void LoadTextures(AddonAPI_t* api, const std::string& addonDir) {
-    const auto iconPath = (std::filesystem::path(addonDir) / "textures" / "raidIconDark.png").string();
-    const auto hoverPath =
-        (std::filesystem::path(addonDir) / "textures" / "raidIconBright.png").string();
-    api->Textures_GetOrCreateFromFile(kIconTex, iconPath.c_str());
-    api->Textures_GetOrCreateFromFile(kIconHoverTex, hoverPath.c_str());
+    if (LoadTextureFromMemory(api, kIconTex) && LoadTextureFromMemory(api, kIconHoverTex)) {
+        return;
+    }
+
+    const auto texturesDir = std::filesystem::path(addonDir) / "textures";
+    LoadTextureFromFile(api, kIconTex, texturesDir / "raidIconDark.png");
+    LoadTextureFromFile(api, kIconHoverTex, texturesDir / "raidIconBright.png");
 }
 
 std::string BuildTooltip(const AppState& state) {

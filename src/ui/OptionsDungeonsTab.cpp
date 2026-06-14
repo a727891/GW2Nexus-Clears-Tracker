@@ -26,10 +26,14 @@ void RenderOptions(AppState& state) {
     ImGui::Spacing();
     SectionSubtext("Toggle individual dungeon columns on the panel.");
 
+    BeginExpansionRow("core");
+
     static const char* kDungeonNames[] = {"AC", "CM", "TA", "SE", "CoF", "HW", "CoE", "Arah"};
     for (size_t i = 0; i < state.settings.dungeonVisible.size(); ++i) {
         ImGui::Checkbox(kDungeonNames[i], &state.settings.dungeonVisible[i]);
     }
+
+    EndExpansionRow();
 }
 
 void RenderColors(AppState& state) {

@@ -1,6 +1,6 @@
 #include "ui/OptionsUiKit.h"
 
-#include "core/AppState.h"
+#include "ui/ContentLogoService.h"
 #include "ui/GridMaskService.h"
 #include "ui/OptionsTextureService.h"
 
@@ -108,17 +108,19 @@ void BeginContentPanel(ImTextureID backgroundTexture) {
 
 void EndContentPanel() { ImGui::EndChild(); }
 
-void RenderExpansionBanner(const char* assetFilename, AppState& state) {
-    if (!assetFilename || assetFilename[0] == '\0') return;
-    (void)state;
-    OptionsTextureService::RequestAssets();
-    const ImTextureID texture = OptionsTextureService::GetTexture(assetFilename);
-    if (!texture) return;
+void BeginExpansionRow(const char* expansionId) {
+    ImGui::Spacing();
+    ImGui::BeginGroup();
+    if (ContentLogoService::RenderLogo(expansionId)) {
+        ImGui::SameLine(0.0f, 12.0f);
+    }
+    ImGui::BeginGroup();
+    ImGui::AlignTextToFramePadding();
+}
 
-    const float width = ImGui::GetContentRegionAvail().x;
-    const float height = 48.0f;
-    ImGui::Image(texture, ImVec2(width, height), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f),
-                 ImVec4(1.0f, 1.0f, 1.0f, 0.85f));
+void EndExpansionRow() {
+    ImGui::EndGroup();
+    ImGui::EndGroup();
     ImGui::Spacing();
 }
 

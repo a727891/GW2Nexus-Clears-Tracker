@@ -36,6 +36,8 @@ void RenderOptions(AppState& state) {
     ImGui::Spacing();
     SectionSubtext("Choose which fractal rows appear on the panel.");
 
+    BeginExpansionRow("core");
+
     if (SettingCheckbox("Show challenge motes", &state.settings.fractalChallengeMotes,
                         "Display CM fractals. Hover tooltip shows today's and tomorrow's "
                         "instabilities.")) {
@@ -84,6 +86,8 @@ void RenderOptions(AppState& state) {
             state.RebuildFractalGroups();
         }
     }
+
+    EndExpansionRow();
 }
 
 }  // namespace

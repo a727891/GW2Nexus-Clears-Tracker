@@ -3,6 +3,7 @@
 #include "core/AppState.h"
 #include "core/Branding.h"
 #include "ui/OptionsTextureService.h"
+#include "ui/ContentLogoService.h"
 #include "ui/OptionsUiKit.h"
 
 #include <imgui.h>
@@ -17,6 +18,7 @@ void Render(AppState& state) {
 
     if (state.api) {
         OptionsTextureService::Initialize(state.api, state.addonDir);
+        ContentLogoService::Initialize(state.api, state.addonDir);
         OptionsTextureService::RequestAssets();
     }
 

@@ -7,8 +7,6 @@
 
 namespace rc {
 
-class AppState;
-
 namespace OptionsUiKit {
 
 constexpr float kSidebarWidth = 180.0f;
@@ -46,7 +44,8 @@ void EndTabPage();
 void BeginContentPanel(ImTextureID backgroundTexture = nullptr);
 void EndContentPanel();
 
-void RenderExpansionBanner(const char* assetFilename, AppState& state);
+void BeginExpansionRow(const char* expansionId);
+void EndExpansionRow();
 
 void RenderGridPreview(const SettingsStore& settings);
 

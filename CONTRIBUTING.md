@@ -60,9 +60,8 @@ at runtime. Dungeons are the main exception — they are hardcoded in C++.
 | `bhud-static/Soeed.RaidClears` branch | Static JSON and option textures (local clone often named `raidClearsStatic`) |
 | **This repo** (`NexusRaidClears`) | Nexus port; consumes the same static files |
 
-Static files are served from:
-
-`https://bhm.blishhud.com/Soeed.RaidClears/static/v2/`
+JSON data files are served from `.../static/v2/`. PNG textures and grid box masks
+are served from `.../static/` (no `v2/` prefix), matching the BlishHUD module.
 
 The addon caches them under `<GW2>/addons/NexusRaidClears/clearsTracker/`.
 HTTP requests to that host and to `assets.gw2dat.com` send
