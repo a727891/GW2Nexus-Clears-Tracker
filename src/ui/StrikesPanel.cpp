@@ -30,7 +30,7 @@ void Render(AppState& state) {
         PanelAnchor::AlignStrikesToRaid(state.settings, raidPlacement.contentSize);
     }
 
-    if (!OverlayPanel::Begin("Strike Clears", state.settings.strikesPanel,
+    if (!OverlayPanel::Begin("Raid Encounter Clears", state.settings.strikesPanel,
                              strikePlacement.contentSize, OverlayPanel::PanelRole::Strikes,
                              state.settings.lockPanelPosition)) {
         return;

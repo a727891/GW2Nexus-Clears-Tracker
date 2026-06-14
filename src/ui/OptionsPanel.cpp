@@ -63,8 +63,8 @@ void Render(AppState& state) {
         state.RequestApiRefresh();
     }
 
-    ImGui::Checkbox("Show Raids Panel", &state.settings.raidPanel.visible);
-    ImGui::Checkbox("Show Strikes Panel", &state.settings.strikesPanel.visible);
+    ImGui::Checkbox("Show Raid Panel", &state.settings.raidPanel.visible);
+    ImGui::Checkbox("Show Raid Encounters Panel", &state.settings.strikesPanel.visible);
     ImGui::Checkbox("Show Fractals Panel", &state.settings.fractalsPanel.visible);
     ImGui::Checkbox("Show Dungeons Panel", &state.settings.dungeonsPanel.visible);
 
@@ -78,7 +78,7 @@ void Render(AppState& state) {
         }
     }
 
-    if (ImGui::Checkbox("Anchor strikes panel to raid panel",
+    if (ImGui::Checkbox("Anchor raid encounters panel to raid panel",
                         &state.settings.anchorStrikesToRaidPanel)) {
         if (state.settings.anchorStrikesToRaidPanel) {
             RealignAnchoredPanels(state);
@@ -86,11 +86,11 @@ void Render(AppState& state) {
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip(
-            "Keeps the strikes panel attached to the raid panel. Moving either panel moves "
-            "both.");
+            "Keeps the raid encounters panel attached to the raid panel. Moving either panel "
+            "moves both.");
     }
 
-    if (ImGui::Checkbox("Anchor fractals panel to strikes panel",
+    if (ImGui::Checkbox("Anchor fractals panel to raid encounters panel",
                         &state.settings.anchorFractalsToStrikesPanel)) {
         if (state.settings.anchorFractalsToStrikesPanel) {
             RealignAnchoredPanels(state);
@@ -98,14 +98,14 @@ void Render(AppState& state) {
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip(
-            "Keeps the fractals panel attached to the strikes panel. Moving either panel moves "
-            "both, and chained raid anchoring is preserved when enabled.");
+            "Keeps the fractals panel attached to the raid encounters panel. Moving either panel "
+            "moves both, and chained raid anchoring is preserved when enabled.");
     }
 
     ImGui::Text("Panel visibility shortcut (NRC_TOGGLE_PANELS)");
-    ImGui::Checkbox("Toggle raids on keybind / corner icon click",
+    ImGui::Checkbox("Toggle raid panel on keybind / corner icon click",
                     &state.settings.keybindToggleRaids);
-    ImGui::Checkbox("Toggle strikes on keybind / corner icon click",
+    ImGui::Checkbox("Toggle raid encounters on keybind / corner icon click",
                     &state.settings.keybindToggleStrikes);
     ImGui::Checkbox("Toggle fractals on keybind / corner icon click",
                     &state.settings.keybindToggleFractals);
@@ -125,7 +125,8 @@ void Render(AppState& state) {
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip(
-            "Uncleared raid and strike bosses that will not be daily bounties for the rest of "
+            "Uncleared raid wing and raid encounter bosses that will not be daily bounties for "
+            "the rest of "
             "the week are highlighted in orange.");
     }
     if (ImGui::Checkbox("Omit event encounters from highlight", &state.settings.omitEventEncounters)) {
@@ -143,7 +144,8 @@ void Render(AppState& state) {
     ImGui::Checkbox("Lock panel position", &state.settings.lockPanelPosition);
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip(
-            "Prevents dragging raid and strike panels. While locked, mouse input passes through "
+            "Prevents dragging raid and raid encounter panels. While locked, mouse input passes "
+            "through "
             "the panels to the game. Tooltips still appear when hovering encounter cells.");
     }
 

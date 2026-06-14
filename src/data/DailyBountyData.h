@@ -16,9 +16,9 @@ class DailyBountyData {
 public:
     bool enabled = false;
     std::string version;
-    std::string name = "Daily Raid Bounties";
+    std::string name = "Daily Raid Encounter Bounties";
     std::string abbreviation = "DRB";
-    std::string tomorrowName = "Tomorrow's Raid Bounties";
+    std::string tomorrowName = "Tomorrow's Raid Encounter Bounties";
     std::string tomorrowAbbreviation = "DRB+";
     std::string dailyBountyCategoryUrl =
         "https://api.guildwars2.com/v2/achievements/categories/475";

@@ -8,12 +8,13 @@ StrikeData StrikeData::FromJson(const nlohmann::json& j) {
     data.weeklyAchievementId = j.value("weekly_achievement_id", 0);
     if (j.contains("priority")) {
         data.priority.id = j["priority"].value("id", "");
-        data.priority.name = j["priority"].value("name", "Daily Raid Bounties");
+        data.priority.name = j["priority"].value("name", "Daily Raid Encounter Bounties");
         data.priority.abbreviation = j["priority"].value("abbriviation", "DRB");
     }
     if (j.contains("priority_tomorrow")) {
         data.priorityTomorrow.id = j["priority_tomorrow"].value("id", "");
-        data.priorityTomorrow.name = j["priority_tomorrow"].value("name", "Tomorrow's Raid Bounties");
+        data.priorityTomorrow.name =
+            j["priority_tomorrow"].value("name", "Tomorrow's Raid Encounter Bounties");
         data.priorityTomorrow.abbreviation = j["priority_tomorrow"].value("abbriviation", "DRB+");
     }
     if (j.contains("weekly_achievement_bit_strike_ids")) {

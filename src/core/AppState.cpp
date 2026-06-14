@@ -305,7 +305,7 @@ void AppState::RebuildStrikeGroups() {
     if (dailyBountyData.enabled) {
         GridGroup daily;
         daily.id = strikeData.priority.id.empty() ? "priority" : strikeData.priority.id;
-        daily.name = strikeData.priority.name.empty() ? dailyBountyData.name : strikeData.priority.name;
+        daily.name = "Daily Raid Encounter Bounties";
         daily.abbreviation = strikeData.priority.abbreviation.empty()
                                    ? dailyBountyData.abbreviation
                                    : strikeData.priority.abbreviation;
@@ -317,8 +317,7 @@ void AppState::RebuildStrikeGroups() {
         GridGroup tomorrow;
         tomorrow.id = strikeData.priorityTomorrow.id.empty() ? "priority_tomorrow"
                                                              : strikeData.priorityTomorrow.id;
-        tomorrow.name = strikeData.priorityTomorrow.name.empty() ? dailyBountyData.tomorrowName
-                                                                   : strikeData.priorityTomorrow.name;
+        tomorrow.name = "Tomorrow's Raid Encounter Bounties";
         tomorrow.abbreviation =
             strikeData.priorityTomorrow.abbreviation.empty()
                 ? dailyBountyData.tomorrowAbbreviation

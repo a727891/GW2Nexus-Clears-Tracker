@@ -20,7 +20,7 @@ void SaveStrikeVisibility(AppState& state) {
 }
 
 void RenderRaidSelection(AppState& state) {
-    if (!ImGui::CollapsingHeader("Raid wings and encounters")) return;
+    if (!ImGui::CollapsingHeader("Raid wings")) return;
 
     for (const auto& exp : state.raidData.expansions) {
         ImGui::PushID(exp.id.c_str());
@@ -74,18 +74,18 @@ void RenderRaidSelection(AppState& state) {
 }
 
 void RenderStrikeSelection(AppState& state) {
-    if (!ImGui::CollapsingHeader("Strike missions")) return;
+    if (!ImGui::CollapsingHeader("Raid encounters")) return;
 
     if (state.dailyBountyData.enabled) {
         ImGui::Text("Daily bounties");
         bool priorityVisible = state.strikeVisibility.IsPriorityVisible();
-        if (ImGui::Checkbox("Daily raid bounties", &priorityVisible)) {
+        if (ImGui::Checkbox("Daily raid encounter bounties", &priorityVisible)) {
             state.strikeVisibility.SetPriorityVisible(priorityVisible);
             SaveStrikeVisibility(state);
         }
 
         bool tomorrowVisible = state.strikeVisibility.IsTomorrowBountiesVisible();
-        if (ImGui::Checkbox("Tomorrow's raid bounties", &tomorrowVisible)) {
+        if (ImGui::Checkbox("Tomorrow's raid encounter bounties", &tomorrowVisible)) {
             state.strikeVisibility.SetTomorrowBountiesVisible(tomorrowVisible);
             SaveStrikeVisibility(state);
         }
@@ -104,7 +104,7 @@ void RenderStrikeSelection(AppState& state) {
             SaveStrikeVisibility(state);
         }
 
-        if (ImGui::TreeNode("Missions")) {
+        if (ImGui::TreeNode("Raid encounters")) {
             for (const auto& mission : exp.missions) {
                 ImGui::PushID(mission.id.c_str());
 

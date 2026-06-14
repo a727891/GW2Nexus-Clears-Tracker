@@ -22,12 +22,13 @@ std::string cachedTooltip_;
 void RenderContextMenu() {
     auto& settings = AppState::Instance().settings;
 
-    const char* raidsLabel = settings.raidPanel.visible ? "Hide Raids" : "Show Raids";
+    const char* raidsLabel = settings.raidPanel.visible ? "Hide Raid Panel" : "Show Raid Panel";
     if (ImGui::Selectable(raidsLabel)) {
         settings.raidPanel.visible = !settings.raidPanel.visible;
     }
 
-    const char* strikesLabel = settings.strikesPanel.visible ? "Hide Strikes" : "Show Strikes";
+    const char* strikesLabel =
+        settings.strikesPanel.visible ? "Hide Raid Encounters" : "Show Raid Encounters";
     if (ImGui::Selectable(strikesLabel)) {
         settings.strikesPanel.visible = !settings.strikesPanel.visible;
     }

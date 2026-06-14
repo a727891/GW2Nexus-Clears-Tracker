@@ -98,7 +98,7 @@ extern "C" __declspec(dllexport) AddonDefinition_t* GetAddonDef() {
         def.Name = "Nexus Raid Clears";
         def.Version = {1, 0, 0, 0};
         def.Author = "Soeed";
-        def.Description = "Raid and strike clear overlay panels for Guild Wars 2.";
+        def.Description = "Raid wing and raid encounter clear overlay panels for Guild Wars 2.";
         def.Load = AddonLoad;
         def.Unload = AddonUnload;
         def.Flags = AF_None;
