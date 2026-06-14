@@ -1,5 +1,7 @@
 #include "services/HttpClient.h"
 
+#include "core/Branding.h"
+
 #include <windows.h>
 #include <winhttp.h>
 
@@ -35,6 +37,10 @@ bool ParseUrl(const std::string& url, std::wstring& host, std::wstring& path, bo
     return !host.empty();
 }
 
+bool UsesModuleUserAgent(const std::wstring& host) {
+    return host == L"bhm.blishhud.com" || host == L"assets.gw2dat.com";
+}
+
 }  // namespace
 
 HttpResponse HttpGetUrlEx(const std::string& url, const HttpRequestOptions& options) {
@@ -46,7 +52,11 @@ HttpResponse HttpGetUrlEx(const std::string& url, const HttpRequestOptions& opti
         return response;
     }
 
-    HINTERNET session = WinHttpOpen(L"NexusRaidClears/1.0",
+    const bool moduleUserAgent = UsesModuleUserAgent(host);
+    const std::wstring sessionAgent =
+        moduleUserAgent ? ToWide(kHttpUserAgent) : L"NexusRaidClears-GW2API/1.0";
+
+    HINTERNET session = WinHttpOpen(sessionAgent.c_str(),
                                     WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
                                     WINHTTP_NO_PROXY_NAME,
                                     WINHTTP_NO_PROXY_BYPASS,
@@ -76,8 +86,11 @@ HttpResponse HttpGetUrlEx(const std::string& url, const HttpRequestOptions& opti
     }
 
     std::wstring headers;
+    if (moduleUserAgent) {
+        headers = L"User-Agent: " + ToWide(kHttpUserAgent) + L"\r\n";
+    }
     if (!options.bearerToken.empty()) {
-        headers = L"Authorization: Bearer " + ToWide(options.bearerToken) + L"\r\n";
+        headers += L"Authorization: Bearer " + ToWide(options.bearerToken) + L"\r\n";
     }
 
     const BOOL sent = WinHttpSendRequest(
