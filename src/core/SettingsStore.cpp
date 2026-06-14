@@ -48,7 +48,7 @@ void SettingsStore::Load(const std::string& path) {
     nlohmann::json j;
     in >> j;
 
-    if (j.contains("apiKey")) apiKey = j["apiKey"].get<std::string>();
+    if (j.contains("apiKey")) legacyApiKey_ = j["apiKey"].get<std::string>();
     if (j.contains("pollIntervalMinutes")) pollIntervalMinutes = j["pollIntervalMinutes"].get<int>();
     if (j.contains("raidPanel")) raidPanel = WindowFromJson(j["raidPanel"], raidPanel);
     if (j.contains("strikesPanel")) strikesPanel = WindowFromJson(j["strikesPanel"], strikesPanel);
@@ -160,7 +160,6 @@ void SettingsStore::Load(const std::string& path) {
 
 void SettingsStore::Save(const std::string& path) const {
     nlohmann::json j = {
-        {"apiKey", apiKey},
         {"pollIntervalMinutes", pollIntervalMinutes},
         {"raidPanel", WindowToJson(raidPanel)},
         {"strikesPanel", WindowToJson(strikesPanel)},
@@ -211,6 +210,12 @@ void SettingsStore::Save(const std::string& path) const {
 
     std::ofstream out(path);
     out << j.dump(2);
+}
+
+std::string SettingsStore::ConsumeLegacyApiKey() {
+    std::string key = std::move(legacyApiKey_);
+    legacyApiKey_.clear();
+    return key;
 }
 
 }  // namespace rc

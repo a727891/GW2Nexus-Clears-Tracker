@@ -1,4 +1,5 @@
 #include "core/AppState.h"
+#include "core/MumbleIdentity.h"
 #include "core/PanelVisibility.h"
 #include "ui/QuickAccessService.h"
 
@@ -71,10 +72,18 @@ void AddonRender() {
     state.ProcessPendingStaticDataLoad();
     state.ProcessPendingApiRefresh();
 
+    if (state.pendingAccountRefresh.exchange(false)) {
+        const auto charName = rc::MumbleIdentity::ParseIdentityName(state.mumbleLink);
+        state.UpdateActiveCharacter(charName);
+    }
+
     if (state.mumbleLink) {
         const uint32_t mapId = Mumble::GetMapId(state.mumbleLink);
         state.mapWatcher.Update(mapId);
         state.fractalMapWatcher.Update(mapId);
+
+        const auto charName = rc::MumbleIdentity::ParseIdentityName(state.mumbleLink);
+        state.UpdateActiveCharacter(charName);
     }
 
     rc::RaidPanel::Render(state);

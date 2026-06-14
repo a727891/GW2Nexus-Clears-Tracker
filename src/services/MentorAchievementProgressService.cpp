@@ -5,14 +5,49 @@
 #include <nlohmann/json.hpp>
 
 namespace rc {
+namespace {
+
+nlohmann::json ProgressToJson(const std::unordered_map<int, MentorProgressEntry>& progress) {
+    nlohmann::json achievements = nlohmann::json::array();
+    for (const auto& [id, entry] : progress) {
+        (void)id;
+        achievements.push_back({{"id", entry.id},
+                                {"current", entry.current},
+                                {"max", entry.max},
+                                {"done", entry.done}});
+    }
+    return achievements;
+}
+
+std::unordered_map<int, MentorProgressEntry> ProgressFromJson(const nlohmann::json& achievements,
+                                                              const std::unordered_map<int, int>& mentorMaxById) {
+    std::unordered_map<int, MentorProgressEntry> loaded;
+    if (!achievements.is_array()) return loaded;
+
+    for (const auto& entryJ : achievements) {
+        MentorProgressEntry entry;
+        entry.id = entryJ.value("id", 0);
+        entry.current = entryJ.value("current", 0);
+        entry.max = entryJ.value("max", MentorAchievementProgressService::kDefaultMax);
+        entry.done = entryJ.value("done", false);
+        if (mentorMaxById.count(entry.id) == 0) continue;
+        entry.max = mentorMaxById.at(entry.id);
+        loaded[entry.id] = entry;
+    }
+    return loaded;
+}
+
+}  // namespace
 
 void MentorAchievementProgressService::Initialize(const RaidData& raidData,
                                                   const std::string& cachePath) {
     cachePath_ = cachePath;
     mentorMaxById_.clear();
+    activeAccount_.clear();
     {
         std::lock_guard lock(mutex_);
         progress_.clear();
+        accountProgress_.clear();
     }
 
     for (const auto& exp : raidData.expansions) {
@@ -28,6 +63,22 @@ void MentorAchievementProgressService::Initialize(const RaidData& raidData,
     }
 }
 
+void MentorAchievementProgressService::SetActiveAccount(const std::string& accountName) {
+    std::lock_guard lock(mutex_);
+    if (!activeAccount_.empty()) {
+        accountProgress_[activeAccount_] = progress_;
+    }
+
+    activeAccount_ = accountName;
+    progress_.clear();
+
+    if (accountName.empty()) return;
+
+    if (const auto it = accountProgress_.find(accountName); it != accountProgress_.end()) {
+        progress_ = it->second;
+    }
+}
+
 void MentorAchievementProgressService::LoadCache() {
     if (cachePath_.empty() || !std::filesystem::exists(cachePath_)) return;
 
@@ -35,22 +86,24 @@ void MentorAchievementProgressService::LoadCache() {
         std::ifstream in(cachePath_);
         nlohmann::json j;
         in >> j;
-        if (!j.contains("achievements")) return;
-
-        std::unordered_map<int, MentorProgressEntry> loaded;
-        for (const auto& entryJ : j["achievements"]) {
-            MentorProgressEntry entry;
-            entry.id = entryJ.value("id", 0);
-            entry.current = entryJ.value("current", 0);
-            entry.max = entryJ.value("max", kDefaultMax);
-            entry.done = entryJ.value("done", false);
-            if (mentorMaxById_.count(entry.id) == 0) continue;
-            entry.max = mentorMaxById_.at(entry.id);
-            loaded[entry.id] = entry;
-        }
 
         std::lock_guard lock(mutex_);
-        progress_ = std::move(loaded);
+        accountProgress_.clear();
+        progress_.clear();
+
+        if (j.contains("accounts") && j["accounts"].is_object()) {
+            for (const auto& [account, data] : j["accounts"].items()) {
+                accountProgress_[account] =
+                    ProgressFromJson(data.value("achievements", nlohmann::json::array()),
+                                     mentorMaxById_);
+            }
+            return;
+        }
+
+        if (j.contains("achievements")) {
+            accountProgress_[""] =
+                ProgressFromJson(j["achievements"], mentorMaxById_);
+        }
     } catch (...) {
     }
 }
@@ -59,18 +112,18 @@ void MentorAchievementProgressService::SaveCache() const {
     if (cachePath_.empty()) return;
 
     nlohmann::json j;
-    j["version"] = "1.0";
-    j["achievements"] = nlohmann::json::array();
+    j["version"] = "2.0";
+    j["accounts"] = nlohmann::json::object();
 
     {
         std::lock_guard lock(mutex_);
-        for (const auto& [id, entry] : progress_) {
-            (void)id;
-            j["achievements"].push_back(
-                {{"id", entry.id},
-                 {"current", entry.current},
-                 {"max", entry.max},
-                 {"done", entry.done}});
+        auto merged = accountProgress_;
+        if (!activeAccount_.empty()) {
+            merged[activeAccount_] = progress_;
+        }
+
+        for (const auto& [account, progress] : merged) {
+            j["accounts"][account] = {{"achievements", ProgressToJson(progress)}};
         }
     }
 
@@ -84,10 +137,19 @@ void MentorAchievementProgressService::SaveCache() const {
     out << j.dump(2);
 }
 
+void MentorAchievementProgressService::LoadAccountSlice(const std::string& accountName) {
+    SetActiveAccount(accountName);
+}
+
+void MentorAchievementProgressService::SaveAccountSlice(const std::string& accountName) const {
+    (void)accountName;
+    SaveCache();
+}
+
 void MentorAchievementProgressService::RefreshFromApi(Gw2ApiClient& api, bool enabled) {
     if (!enabled || mentorMaxById_.empty()) return;
 
-    const auto token = api.ValidateToken();
+    const auto token = api.FetchTokenInfo();
     if (!token.valid) return;
 
     bool hasAccount = false;
@@ -129,6 +191,9 @@ void MentorAchievementProgressService::RefreshFromApi(Gw2ApiClient& api, bool en
         }
         if (changed) {
             progress_ = std::move(updated);
+            if (!activeAccount_.empty()) {
+                accountProgress_[activeAccount_] = progress_;
+            }
         }
     }
 

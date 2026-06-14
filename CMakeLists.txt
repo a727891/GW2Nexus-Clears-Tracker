@@ -44,6 +44,8 @@ set(SRC_FILES
     src/entry.cpp
     src/core/AppState.cpp
     src/core/SettingsStore.cpp
+    src/core/AccountRegistry.cpp
+    src/core/MumbleIdentity.cpp
     src/core/Types.cpp
     src/core/PanelVisibility.cpp
     src/core/RaidVisibilityStore.cpp

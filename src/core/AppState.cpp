@@ -1,4 +1,5 @@
 #include "core/AppState.h"
+#include "core/MumbleIdentity.h"
 #include "core/StorageKeyUtil.h"
 
 #include "data/DungeonData.h"
@@ -49,7 +50,30 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     addonDir = api->Paths_GetAddonDirectory("NexusRaidClears");
     const auto settingsPath = (std::filesystem::path(addonDir) / "settings.json").string();
     settings.Load(settingsPath);
-    gw2Api.SetApiKey(settings.apiKey);
+
+    accountRegistry.Load(ApiAccountsPath());
+    accountRegistry.SetStoragePath(ApiAccountsPath());
+    const auto legacyKey = settings.ConsumeLegacyApiKey();
+    if (!legacyKey.empty() && accountRegistry.AccountsSnapshot().empty()) {
+        const auto result = accountRegistry.RegisterKey(gw2Api, legacyKey);
+        if (result.success) {
+            accountRegistry.Save(ApiAccountsPath());
+            settings.Save(settingsPath);
+            if (api) {
+                api->Log(LOGL_INFO, "NexusRaidClears",
+                          "Migrated legacy API key to registered accounts.");
+            }
+        }
+    }
+
+    const auto initialCharacter = MumbleIdentity::ParseIdentityName(mumbleLink);
+    characterName = initialCharacter;
+    if (accountRegistry.ResolveActiveAccount(initialCharacter, gw2Api)) {
+        OnActiveAccountChanged();
+    } else {
+        accountName = accountRegistry.ActiveAccountName().value_or("");
+        mentorProgress.SetActiveAccount(accountName);
+    }
 
     raidVisibility.Load((std::filesystem::path(addonDir) / "raid_settings.json").string());
     strikeVisibility.Load((std::filesystem::path(addonDir) / "strike_settings.json").string());
@@ -139,6 +163,8 @@ void AppState::Shutdown() {
     settings.Save(settingsPath);
     raidVisibility.Save((std::filesystem::path(addonDir) / "raid_settings.json").string());
     strikeVisibility.Save((std::filesystem::path(addonDir) / "strike_settings.json").string());
+    accountRegistry.Save(ApiAccountsPath());
+    mentorProgress.SaveCache();
     const auto strikePersistPath =
         (std::filesystem::path(addonDir) / "clearsTracker" / "strike_clears.json").string();
     const auto fractalPersistPath =
@@ -432,12 +458,28 @@ void AppState::ProcessPendingApiRefresh() {
 }
 
 void AppState::OnApiPoll() {
-    if (settings.apiKey.empty()) return;
-
-    if (auto name = gw2Api.FetchAccountName()) {
-        accountName = *name;
+    const auto activeKey = accountRegistry.ActiveApiKey();
+    if (!activeKey) {
+        accountName.clear();
+        std::lock_guard lock(dataMutex);
+        raidClearsSet.clear();
+        strikeClearsSet.clear();
+        fractalClearsSet.clear();
+        dungeonClearsSet.clear();
+        frequenterPathsSet.clear();
+        completedBountyAchievementIds.clear();
+        ApplyRaidClears();
+        ApplyStrikeClears();
+        ApplyFractalClears();
+        ApplyDungeonClears();
+        ApplyDailyBountyClears();
+        ApplyNonWeeklyHighlights();
         if (api) QuickAccessService::Refresh(api, *this);
+        return;
     }
+
+    gw2Api.SetApiKey(*activeKey);
+    accountName = accountRegistry.ActiveAccountName().value_or("");
 
     if (auto clears = gw2Api.FetchRaidClears()) {
         std::lock_guard lock(dataMutex);
@@ -591,6 +633,61 @@ void AppState::TickResets() {
         ApplyDailyBountyClears();
         ApplyNonWeeklyHighlights();
     }
+}
+
+std::string AppState::ApiAccountsPath() const {
+    return (std::filesystem::path(addonDir) / "api_accounts.json").string();
+}
+
+void AppState::OnActiveAccountChanged() {
+    accountName = accountRegistry.ActiveAccountName().value_or("");
+    mentorProgress.SetActiveAccount(accountName);
+
+    if (const auto activeKey = accountRegistry.ActiveApiKey()) {
+        gw2Api.SetApiKey(*activeKey);
+    }
+
+    mapWatcher.DispatchCurrentStrikeClears();
+    fractalMapWatcher.DispatchCurrentFractalClears();
+    RequestApiRefresh();
+    if (api) QuickAccessService::Refresh(api, *this);
+}
+
+void AppState::UpdateActiveCharacter(const std::string& newCharacterName) {
+    if (newCharacterName == characterName &&
+        newCharacterName == accountRegistry.LastResolvedCharacter()) {
+        return;
+    }
+
+    characterName = newCharacterName;
+    if (accountRegistry.ResolveActiveAccount(newCharacterName, gw2Api)) {
+        OnActiveAccountChanged();
+    } else {
+        accountName = accountRegistry.ActiveAccountName().value_or("");
+        mentorProgress.SetActiveAccount(accountName);
+        if (api) QuickAccessService::Refresh(api, *this);
+    }
+}
+
+void AppState::RegisterApiKey(const std::string& apiKey) {
+    accountRegistry.RegisterKeyAsync(apiKey, ApiAccountsPath(),
+                                     [this](const RegisterKeyResult& result) {
+                                         if (api) {
+                                             const auto level =
+                                                 result.success ? LOGL_INFO : LOGL_WARNING;
+                                             api->Log(level, "NexusRaidClears",
+                                                      result.message.c_str());
+                                         }
+                                         if (result.success) {
+                                             pendingAccountRefresh.store(true);
+                                         }
+                                     });
+}
+
+void AppState::RemoveApiKey(const std::string& tokenId) {
+    if (!accountRegistry.RemoveKey(tokenId)) return;
+    accountRegistry.Save(ApiAccountsPath());
+    UpdateActiveCharacter(characterName);
 }
 
 }  // namespace rc

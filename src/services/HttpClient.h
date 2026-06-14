@@ -11,6 +11,12 @@ struct HttpRequestOptions {
     int readTimeoutMs = 15000;
 };
 
+struct HttpResponse {
+    int statusCode = 0;
+    std::string body;
+};
+
+HttpResponse HttpGetUrlEx(const std::string& url, const HttpRequestOptions& options = {});
 std::optional<std::string> HttpGetUrl(const std::string& url,
                                       const HttpRequestOptions& options = {});
 

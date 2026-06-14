@@ -37,13 +37,13 @@ bool ParseUrl(const std::string& url, std::wstring& host, std::wstring& path, bo
 
 }  // namespace
 
-std::optional<std::string> HttpGetUrl(const std::string& url,
-                                      const HttpRequestOptions& options) {
+HttpResponse HttpGetUrlEx(const std::string& url, const HttpRequestOptions& options) {
+    HttpResponse response;
     std::wstring host;
     std::wstring path;
     bool secure = false;
     if (!ParseUrl(url, host, path, secure)) {
-        return std::nullopt;
+        return response;
     }
 
     HINTERNET session = WinHttpOpen(L"NexusRaidClears/1.0",
@@ -51,7 +51,7 @@ std::optional<std::string> HttpGetUrl(const std::string& url,
                                     WINHTTP_NO_PROXY_NAME,
                                     WINHTTP_NO_PROXY_BYPASS,
                                     0);
-    if (!session) return std::nullopt;
+    if (!session) return response;
 
     WinHttpSetTimeouts(session, options.connectTimeoutMs, options.connectTimeoutMs,
                        options.readTimeoutMs, options.readTimeoutMs);
@@ -62,7 +62,7 @@ std::optional<std::string> HttpGetUrl(const std::string& url,
                        0);
     if (!connection) {
         WinHttpCloseHandle(session);
-        return std::nullopt;
+        return response;
     }
 
     DWORD flags = secure ? WINHTTP_FLAG_SECURE : 0;
@@ -72,7 +72,7 @@ std::optional<std::string> HttpGetUrl(const std::string& url,
     if (!request) {
         WinHttpCloseHandle(connection);
         WinHttpCloseHandle(session);
-        return std::nullopt;
+        return response;
     }
 
     std::wstring headers;
@@ -87,10 +87,17 @@ std::optional<std::string> HttpGetUrl(const std::string& url,
         WinHttpCloseHandle(request);
         WinHttpCloseHandle(connection);
         WinHttpCloseHandle(session);
-        return std::nullopt;
+        return response;
     }
 
-    std::string body;
+    DWORD statusCode = 0;
+    DWORD statusSize = sizeof(statusCode);
+    if (WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+                            WINHTTP_HEADER_NAME_BY_INDEX, &statusCode, &statusSize,
+                            WINHTTP_NO_HEADER_INDEX)) {
+        response.statusCode = static_cast<int>(statusCode);
+    }
+
     DWORD available = 0;
     do {
         if (!WinHttpQueryDataAvailable(request, &available)) break;
@@ -99,14 +106,23 @@ std::optional<std::string> HttpGetUrl(const std::string& url,
         std::vector<char> buffer(available);
         DWORD read = 0;
         if (!WinHttpReadData(request, buffer.data(), available, &read)) break;
-        body.append(buffer.data(), buffer.data() + read);
+        response.body.append(buffer.data(), buffer.data() + read);
     } while (available > 0);
 
     WinHttpCloseHandle(request);
     WinHttpCloseHandle(connection);
     WinHttpCloseHandle(session);
 
-    return body.empty() ? std::nullopt : std::optional<std::string>{std::move(body)};
+    return response;
+}
+
+std::optional<std::string> HttpGetUrl(const std::string& url,
+                                      const HttpRequestOptions& options) {
+    const auto response = HttpGetUrlEx(url, options);
+    if (response.statusCode < 200 || response.statusCode >= 300 || response.body.empty()) {
+        return std::nullopt;
+    }
+    return response.body;
 }
 
 }  // namespace rc

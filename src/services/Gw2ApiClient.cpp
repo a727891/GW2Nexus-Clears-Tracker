@@ -131,7 +131,32 @@ std::optional<std::string> Gw2ApiClient::FetchAccountName() {
     }
 }
 
-TokenInfo Gw2ApiClient::ValidateToken() {
+std::optional<std::vector<std::string>> Gw2ApiClient::FetchAccountCharacters() {
+    auto body = HttpGet("/v2/characters", true);
+    if (!body) return std::nullopt;
+
+    try {
+        auto j = nlohmann::json::parse(*body);
+        if (!j.is_array()) {
+            return std::nullopt;
+        }
+
+        std::vector<std::string> characters;
+        characters.reserve(j.size());
+        for (const auto& name : j) {
+            if (!name.is_string()) continue;
+            const auto value = name.get<std::string>();
+            if (!value.empty()) {
+                characters.push_back(value);
+            }
+        }
+        return characters;
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
+TokenInfo Gw2ApiClient::FetchTokenInfo() {
     TokenInfo info;
     auto body = HttpGet("/v2/tokeninfo", true);
     if (!body) return info;
@@ -139,6 +164,8 @@ TokenInfo Gw2ApiClient::ValidateToken() {
     try {
         auto j = nlohmann::json::parse(*body);
         info.valid = true;
+        info.id = j.value("id", "");
+        info.name = j.value("name", "");
         if (j.contains("permissions")) {
             for (const auto& p : j["permissions"]) {
                 info.permissions.push_back(p.get<std::string>());
@@ -148,6 +175,10 @@ TokenInfo Gw2ApiClient::ValidateToken() {
         info.valid = false;
     }
     return info;
+}
+
+TokenInfo Gw2ApiClient::ValidateToken() {
+    return FetchTokenInfo();
 }
 
 }  // namespace rc

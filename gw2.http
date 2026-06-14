@@ -1,0 +1,131 @@
+### =============================================================================
+### GW2 API — NexusRaidClears registration tests
+### VS Code extension: humao.rest-client (REST Client)
+### https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+###
+### Usage:
+###   1. Paste your API key(s) into the config section below.
+###   2. Set @activeApiKey to the variable you want to exercise.
+###   3. Click "Send Request" above any ### section.
+###
+### Registration flow (matches AccountRegistry::BuildProfile):
+###   tokeninfo -> account -> characters
+### Required permissions: account, progression, characters
+### =============================================================================
+
+@baseUrl = https://api.guildwars2.com
+
+# --- API keys ---
+# Add one @variable per GW2 API key. Keep keys out of git if this file is committed.
+@apiKeyPrimary = PASTE-YOUR-API-KEY-HERE
+@apiKeySecondary =
+
+# Switch between keys by changing this line only.
+@activeApiKey = {{apiKeyPrimary}}
+
+# Shorthand used by all requests below.
+@apiKey = {{activeApiKey}}
+
+
+### =============================================================================
+### Registration step 1 — Validate token / read permissions
+### GET /v2/tokeninfo
+###
+### Success: 200
+### Body fields: id, name, permissions[]
+### permissions must include: account, progression, characters
+### =============================================================================
+
+# @name tokeninfo
+GET {{baseUrl}}/v2/tokeninfo
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+
+### =============================================================================
+### Registration step 2 — Fetch account name
+### GET /v2/account
+###
+### Success: 200
+### Body field used by addon: name
+### Requires permission: account
+### =============================================================================
+
+# @name account
+GET {{baseUrl}}/v2/account
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+
+### =============================================================================
+### Registration step 3 — Fetch character names (CORRECT endpoint)
+### GET /v2/characters
+###
+### Success: 200
+### Body: JSON array of strings, e.g. ["My Ranger", "My Mesmer"]
+### Requires permission: characters
+###
+### This is what NexusRaidClears expects and stores in api_accounts.json.
+### =============================================================================
+
+# @name characters
+GET {{baseUrl}}/v2/characters
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+
+### =============================================================================
+### Registration step 3 (alternate) — Full character objects
+### GET /v2/characters?ids=all
+###
+### Success: 200
+### Body: JSON array of objects; each object has a "name" field (plus race, level, etc.)
+### Requires permission: characters
+###
+### NOT what the addon parses today — included for comparison/debugging only.
+### =============================================================================
+
+# @name charactersAll
+GET {{baseUrl}}/v2/characters?ids=all
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+
+### =============================================================================
+### Known-bad endpoint (old bug)
+### GET /v2/account/characters
+###
+### Failure: 404
+### Body: {"text":"not found"}
+###
+### This endpoint does not exist. Iterating that JSON object produced characters:
+### ["not found"]
+### =============================================================================
+
+# @name charactersWrongEndpoint
+GET {{baseUrl}}/v2/account/characters
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+
+### =============================================================================
+### Optional — test secondary API key (duplicate registration flow)
+### Set @activeApiKey = {{apiKeySecondary}} at the top, or override locally:
+### =============================================================================
+
+# @name tokeninfoSecondary
+GET {{baseUrl}}/v2/tokeninfo
+Authorization: Bearer {{apiKeySecondary}}
+Accept: application/json
+
+###
+# @name accountSecondary
+GET {{baseUrl}}/v2/account
+Authorization: Bearer {{apiKeySecondary}}
+Accept: application/json
+
+###
+# @name charactersSecondary
+GET {{baseUrl}}/v2/characters
+Authorization: Bearer {{apiKeySecondary}}
+Accept: application/json

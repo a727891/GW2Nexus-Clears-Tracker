@@ -61,8 +61,13 @@ void LoadTextures(AddonAPI_t* api, const std::string& addonDir) {
 
 std::string BuildTooltip(const AppState& state) {
     std::string tooltip = "Nexus Raid Clears";
+    if (!state.characterName.empty()) {
+        tooltip += "\nCharacter: " + state.characterName;
+    }
     if (!state.accountName.empty()) {
         tooltip += "\nAccount: " + state.accountName;
+    } else if (!state.characterName.empty()) {
+        tooltip += "\nNo registered key matches this character.";
     }
     if (!state.motd.empty()) {
         tooltip += "\n\n" + state.motd;

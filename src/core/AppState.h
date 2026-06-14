@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/AccountRegistry.h"
 #include "core/SettingsStore.h"
 #include "core/RaidVisibilityStore.h"
 #include "core/StrikeVisibilityStore.h"
@@ -43,10 +44,12 @@ public:
     Mumble::Data* mumbleLink = nullptr;
     std::string addonDir;
     std::string accountName;
+    std::string characterName;
     std::string motd;
     std::string motdId;
 
     SettingsStore settings;
+    AccountRegistry accountRegistry;
     RaidVisibilityStore raidVisibility;
     StrikeVisibilityStore strikeVisibility;
     RaidData raidData;
@@ -80,6 +83,7 @@ public:
     std::unordered_set<std::string> frequenterPathsSet;
     std::unordered_set<int> completedBountyAchievementIds;
     std::atomic<bool> apiRefreshPending{false};
+    std::atomic<bool> pendingAccountRefresh{false};
     std::atomic<bool> staticDataLoadPending{false};
     bool staticDataReady = false;
     bool fractalDataReady = false;
@@ -109,6 +113,11 @@ public:
     void RequestApiRefresh();
     void ProcessPendingApiRefresh();
     void TickResets();
+    void UpdateActiveCharacter(const std::string& characterName);
+    void OnActiveAccountChanged();
+    void RegisterApiKey(const std::string& apiKey);
+    void RemoveApiKey(const std::string& tokenId);
+    std::string ApiAccountsPath() const;
 };
 
 }  // namespace rc

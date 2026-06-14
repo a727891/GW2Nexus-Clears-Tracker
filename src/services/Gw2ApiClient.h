@@ -20,6 +20,8 @@ struct AccountAchievement {
 
 struct TokenInfo {
     bool valid = false;
+    std::string id;
+    std::string name;
     std::vector<std::string> permissions;
 };
 
@@ -33,6 +35,8 @@ public:
     std::optional<std::vector<AccountAchievement>> FetchAccountAchievements();
     std::optional<std::vector<int>> FetchAchievementCategoryIds(const std::string& url);
     std::optional<std::string> FetchAccountName();
+    std::optional<std::vector<std::string>> FetchAccountCharacters();
+    TokenInfo FetchTokenInfo();
     TokenInfo ValidateToken();
 
 private:

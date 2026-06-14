@@ -38,31 +38,97 @@ void RealignAnchoredPanels(AppState& state) {
     }
 }
 
+void RenderApiAccounts(AppState& state) {
+    ImGui::Separator();
+    ImGui::Text("API Accounts");
+
+    static char apiKeyBuf[128] = {};
+    const bool registering = state.accountRegistry.IsRegistering();
+
+    ImGui::InputText("GW2 API Key", apiKeyBuf, sizeof(apiKeyBuf), ImGuiInputTextFlags_Password);
+    if (!registering && ImGui::Button("Register Key")) {
+        state.RegisterApiKey(apiKeyBuf);
+        apiKeyBuf[0] = '\0';
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Validates the key against the GW2 API and stores account name, key name, and "
+            "characters. Requires account, progression, and characters permissions.");
+    }
+
+    const auto status = state.accountRegistry.LastRegistrationMessage();
+    if (!status.empty()) {
+        ImGui::TextWrapped("%s", status.c_str());
+    }
+    if (registering) {
+        ImGui::TextDisabled("Registering API key...");
+    }
+
+    const auto accounts = state.accountRegistry.AccountsSnapshot();
+    const auto activeTokenId = state.accountRegistry.ActiveTokenId();
+
+    if (accounts.empty()) {
+        ImGui::TextDisabled("No API keys registered.");
+    } else if (ImGui::BeginTable("api_accounts", 4,
+                                  ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+        ImGui::TableSetupColumn("Key");
+        ImGui::TableSetupColumn("Account");
+        ImGui::TableSetupColumn("Chars");
+        ImGui::TableSetupColumn("Actions");
+        ImGui::TableHeadersRow();
+
+        for (const auto& account : accounts) {
+            ImGui::TableNextRow();
+            ImGui::PushID(account.tokenId.c_str());
+
+            ImGui::TableNextColumn();
+            std::string keyLabel = account.keyName;
+            if (activeTokenId && *activeTokenId == account.tokenId) {
+                keyLabel += " (active)";
+            }
+            ImGui::TextUnformatted(keyLabel.c_str());
+
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted(account.accountName.c_str());
+
+            ImGui::TableNextColumn();
+            ImGui::Text("%zu", account.characters.size());
+
+            ImGui::TableNextColumn();
+            if (ImGui::Button("Remove")) {
+                state.RemoveApiKey(account.tokenId);
+            }
+
+            ImGui::PopID();
+        }
+
+        ImGui::EndTable();
+    }
+
+    if (!state.characterName.empty()) {
+        ImGui::Text("Character: %s", state.characterName.c_str());
+    } else {
+        ImGui::TextDisabled("Character: (not in game)");
+    }
+
+    if (!state.accountName.empty()) {
+        ImGui::Text("Active account: %s", state.accountName.c_str());
+    } else if (!state.characterName.empty()) {
+        ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f),
+                           "No registered key matches the current character. API clears "
+                           "unavailable.");
+    } else {
+        ImGui::TextDisabled("Active account: (none)");
+    }
+}
+
 }  // namespace
 
 void Render(AppState& state) {
     ImGui::Separator();
     ImGui::Text("Nexus Raid Clears");
 
-    static char apiKeyBuf[128] = {};
-    if (apiKeyBuf[0] == '\0' && !state.settings.apiKey.empty()) {
-        strncpy(apiKeyBuf, state.settings.apiKey.c_str(), sizeof(apiKeyBuf) - 1);
-    }
-
-    ImGui::InputText("GW2 API Key", apiKeyBuf, sizeof(apiKeyBuf), ImGuiInputTextFlags_Password);
-    if (ImGui::Button("Save API Key")) {
-        state.settings.apiKey = apiKeyBuf;
-        state.gw2Api.SetApiKey(state.settings.apiKey);
-        const auto info = state.gw2Api.ValidateToken();
-        if (state.api) {
-            if (info.valid) {
-                state.api->Log(LOGL_INFO, "NexusRaidClears", "API key saved and validated.");
-            } else {
-                state.api->Log(LOGL_WARNING, "NexusRaidClears", "API key saved but validation failed.");
-            }
-        }
-        state.RequestApiRefresh();
-    }
+    RenderApiAccounts(state);
 
     ImGui::Checkbox("Show Raid Panel", &state.settings.raidPanel.visible);
     ImGui::Checkbox("Show Raid Encounters Panel", &state.settings.strikesPanel.visible);
@@ -331,10 +397,6 @@ void Render(AppState& state) {
     ImGui::Separator();
     EncounterSelectionPanel::Render(state);
     LabelCustomizationPanel::Render(state);
-
-    if (!state.accountName.empty()) {
-        ImGui::Text("Account: %s", state.accountName.c_str());
-    }
 }
 
 }  // namespace OptionsPanel

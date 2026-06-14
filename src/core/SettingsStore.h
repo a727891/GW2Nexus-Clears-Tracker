@@ -8,7 +8,6 @@ namespace rc {
 
 class SettingsStore {
 public:
-    std::string apiKey;
     int pollIntervalMinutes = 5;
 
     WindowState raidPanel;
@@ -62,6 +61,10 @@ public:
 
     void Load(const std::string& path);
     void Save(const std::string& path) const;
+    std::string ConsumeLegacyApiKey();
+
+private:
+    std::string legacyApiKey_;
 };
 
 }  // namespace rc
