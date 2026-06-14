@@ -1,34 +1,47 @@
-# Nexus Raid Clears
+# Clears Tracker (Nexus)
 
-Nexus addon port of the BlishHUD Raid Clears module. Shows raid and strike overlay panels with weekly clear indicators from the GW2 API, plus daily raid bounty rows on the Strikes panel.
+Nexus addon port of the [BlishHUD Clears Tracker](https://github.com/a727891/BlishHud-Raid-Clears) module.
 
-## Features (MVP)
+Track daily and weekly PvE clears — raids, strikes, fractals, and dungeons — in overlay panels backed by the Guild Wars 2 API.
 
-- **Raids panel** — wing/encounter grid colored by `/v2/account/raids`
-- **Strikes panel** — weekly strike clears from achievement 9125, plus Daily Bounty and Tomorrow rows
-- **Daily raid bounties** — today's bounty clear state from achievement category 475
-- **Map-tracked strike** — Dragonstorm clear on map leave via Mumble link
-- **Settings** — API key, colors, poll interval, panel visibility
-- **Keybind** — `NRC_TOGGLE_PANELS` (default `ALT+SHIFT+R`). Choose which panels respond in options via **Toggle raids/strikes on keybind / corner icon click**. Corner icon left-click uses the same shortcut.
+## Features
+
+- **Raids** — wing/encounter grid from `/v2/account/raids`; daily raid bounty rows; mentor progress tooltips and popups
+- **Strikes** — weekly clears from achievement 9125; daily bounty and tomorrow rows; map-tracked daily strikes (e.g. Dragonstorm)
+- **Fractals** — recommended and daily tiers, CM selection, instability tooltips
+- **Dungeons** — path clear status from `/v2/account/dungeons`
+- **Customization** — layout, colors, labels, per-encounter visibility, screen clamp, stylized grid boxes
+- **Quick access** — corner icon and `NRC_TOGGLE_PANELS` keybind (default `ALT+SHIFT+R`)
 
 ## Requirements
 
-- [Nexus](https://raidcore.gg/gw2/nexus) installed in Guild Wars 2
-- GW2 API key with `account` and `progression` permissions
-- Windows x64 for runtime
+- [Nexus](https://raidcore.gg/gw2/nexus) in Guild Wars 2
+- GW2 API key with `**account`** and `**progression**` permissions
+- Windows x64 at runtime (DLL is cross-compiled from Linux)
 
-## Build (Linux cross-compile → Windows DLL)
+## Installation
 
-Install MinGW toolchain (Fedora/Nobara):
+1. Copy `NexusRaidClears.dll` to `<GW2>/addons/` (directly in `addons/`, not a subfolder)
+2. Launch GW2 with Nexus enabled
+3. Enable **Clears Tracker** in Nexus addon settings
+4. Enter your API key in options and click **Save API Key**
+5. Enable the panels you want (Raids, Strikes, Fractals, Dungeons)
+
+On first run the addon downloads encounter metadata into
+`<GW2>/addons/NexusRaidClears/clearsTracker/`. Pre-seeding that folder avoids a
+background download during load (see [Build & deploy](#build--deploy)).
+
+## Build & deploy
+
+### Toolchain (Fedora/Nobara)
 
 ```bash
 sudo dnf install mingw64-gcc-c++ mingw64-winpthreads-static cmake ninja git
 ```
 
-Configure and build:
+### Build
 
 ```bash
-cd NexusRaidClears
 cmake -B build -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64-toolchain.cmake \
   -DCMAKE_BUILD_TYPE=Release
@@ -37,67 +50,90 @@ cmake --build build
 
 Output: `build/NexusRaidClears.dll`
 
-### Deploy to local GW2 (Steam/Proton)
-
-After building, run:
+### Deploy to local GW2
 
 ```bash
-./scripts/deploy-to-gw2.sh
+./scripts/deploy-to-gw2.sh           # DLL + static JSON + corner icon textures
+./scripts/deploy-to-gw2.sh --ftue    # DLL only — test first-load downloads
 ```
 
-This copies:
-- `build/NexusRaidClears.dll` → GW2 `addons/`
-- `raid_data.json`, `strike_data.json`, `daily_bounties.json` → `addons/NexusRaidClears/clearsTracker/`
+Grid box masks are downloaded at runtime from the static host (not pre-seeded by
+the deploy script). Pre-seeding `NexusRaidClears/clearsTracker/` JSON avoids
+blocking on first load for encounter metadata.
 
-Pre-seeding the static cache avoids a background download on first load and prevents load-time freezes.
-
-## Deploy
-
-1. Copy `build/NexusRaidClears.dll` to `<GW2>/addons/` (the `addons` subfolder, not the game root)
-2. Launch GW2 with Nexus
-3. Open Nexus options → find **Nexus Raid Clears** in the addon list
-4. Enable the addon, then enter your GW2 API key and click **Save API Key**
-5. Enable Raids / Strikes panels
-
-Static encounter data is cached under `<GW2>/addons/NexusRaidClears/clearsTracker/`.
+A local deploy helper script may exist on your machine; it is not required for
+end users.
 
 ### Nexus does not list the DLL
 
-The most common cause for MinGW-built addons is missing runtime DLLs. Rebuild with the current `CMakeLists.txt` (static MinGW runtime linking). After rebuilding, verify the DLL only imports Windows system libraries:
+Rebuild with the provided `CMakeLists.txt` (static MinGW runtime). The DLL should
+only import Windows system libraries:
 
 ```bash
 x86_64-w64-mingw32-objdump -p build/NexusRaidClears.dll | rg "DLL Name"
 ```
 
-You should see only entries like `KERNEL32.dll`, `USER32.dll`, `WS2_32.dll`, `msvcrt.dll` — **not** `libstdc++-6.dll`, `libgcc_s_seh-1.dll`, or `libwinpthread-1.dll`.
+Expect `KERNEL32.dll`, `USER32.dll`, `WS2_32.dll`, `msvcrt.dll` — **not**
+`libstdc++-6.dll`, `libgcc_s_seh-1.dll`, or `libwinpthread-1.dll`.
 
 Also confirm:
-- File is named `NexusRaidClears.dll` (not `libNexusRaidClears.dll`)
-- File is directly in `addons/`, not a subfolder
-- DLL is x64 (matches GW2 / Nexus)
+
+- Filename is `NexusRaidClears.dll` (not `libNexusRaidClears.dll`)
+- File is x64 and sits directly in `addons/`
 
 ## Manual test checklist
 
 - [ ] Addon loads without Nexus errors
 - [ ] API key validates (`account` + `progression`)
 - [ ] Raids panel shows wings/encounters with correct cleared/uncleared colors
-- [ ] Strikes panel shows weekly clears from achievement 9125
-- [ ] Daily Bounty row shows 4 encounters with correct clear state
-- [ ] Tomorrow row shows next-day rotation (neutral coloring)
-- [ ] Panels hide when world map is open
-- [ ] Panels reappear in gameplay
-- [ ] Window positions and settings persist after reload
+- [ ] Strikes panel reflects weekly achievement 9125 clears
+- [ ] Daily bounty row shows encounters with correct clear state
+- [ ] Tomorrow row shows next-day rotation
+- [ ] Fractals panel shows daily/rec tiers and CM tooltips
+- [ ] Dungeons panel shows path clears
+- [ ] Panels hide on world map; reappear in gameplay
+- [ ] Settings and window positions persist after reload
 - [ ] Manual refresh updates clears
-- [ ] Keybinds toggle panels
+- [ ] Keybind / corner icon toggle panels
 
-## Static data source
+## Static data
 
-Encounter layout JSON is fetched from:
+Encounter layout and metadata are fetched from freesnow's Blish static host:
 
 `https://bhm.blishhud.com/Soeed.RaidClears/static/v2/`
 
-Files: `raid_data.json`, `strike_data.json`, `daily_bounties.json`
+Icons may be loaded from `https://assets.gw2dat.com/`. Both hosts receive an
+identifiable `User-Agent: ClearsTracker-Nexus/<version>`.
+
+To add or update encounters, see **[CONTRIBUTING.md](CONTRIBUTING.md)** — most
+changes are JSON-only in the static-data branch; dungeons require a code change.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for build notes, project layout, and a
+step-by-step guide for maintaining raids, strikes, fractals, bounties, and
+dungeons when ArenaNet adds content.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## Credits
+
+- **Soeed** — Clears Tracker (BlishHUD) and this Nexus port
+- **Abbadon** — BlishHUD contributor
+- **freesnow** — static data and icon hosting (`bhm.blishhud.com`, `assets.gw2dat.com`)
+- **Raidcore** — Nexus addon platform
+
+Inspired by the raid feature in Gw2TaCO.
+
+## Links
+
+- [BlishHUD Clears Tracker](https://github.com/a727891/BlishHud-Raid-Clears)
+- [BlishHUD module page](https://blishhud.com/modules/?module=Soeed.RaidClears)
+- [Patch notes](https://pkgs.blishhud.com/Soeed.RaidClears.html)
+- [Nexus](https://raidcore.gg/gw2/nexus)
 
 ## License
 
-MIT (Nexus API headers: Raidcore.GG MIT license)
+MIT — see [LICENSE](LICENSE). Nexus API headers: Raidcore.GG MIT license.
