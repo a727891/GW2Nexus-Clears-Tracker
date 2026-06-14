@@ -46,7 +46,14 @@ void Render(AppState& state) {
     }
 
     ImFont* font = UiFontService::GetGridFont(state.nexusLink);
-    GridDrawContext context{&state.raidData, &state.strikeData, &state.mentorProgress, false};
+    GridDrawContext context{.raidData = &state.raidData,
+                            .strikeData = &state.strikeData,
+                            .mentorProgress = &state.mentorProgress,
+                            .fractalMapData = &state.fractalMapData,
+                            .instabilitiesData =
+                                state.instabilitiesDataReady ? &state.instabilitiesData : nullptr,
+                            .fractalPersist = &state.fractalPersist,
+                            .isFractalsPanel = true};
     GridRenderer::DrawGroups(state.fractalGroups, state.settings, true, true, font, context);
     const uint32_t screenW = state.nexusLink ? state.nexusLink->Width : 0;
     const uint32_t screenH = state.nexusLink ? state.nexusLink->Height : 0;

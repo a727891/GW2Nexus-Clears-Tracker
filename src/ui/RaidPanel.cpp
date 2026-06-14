@@ -27,7 +27,8 @@ void Render(AppState& state) {
     }
 
     ImFont* font = UiFontService::GetGridFont(state.nexusLink);
-    GridDrawContext context{&state.raidData, nullptr, &state.mentorProgress, false};
+    GridDrawContext context{.raidData = &state.raidData,
+                            .mentorProgress = &state.mentorProgress};
     GridRenderer::DrawGroups(visibleGroups, state.settings, true, true, font, context);
     const uint32_t screenW = state.nexusLink ? state.nexusLink->Width : 0;
     const uint32_t screenH = state.nexusLink ? state.nexusLink->Height : 0;

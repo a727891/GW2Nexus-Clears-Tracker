@@ -2,6 +2,7 @@
 
 #include "services/WeeklyModifierService.h"
 #include "ui/EncounterTooltip.h"
+#include "ui/FractalCmTooltip.h"
 #include "ui/GridLayout.h"
 #include "ui/GridMaskService.h"
 
@@ -165,25 +166,40 @@ void DrawEncounterCellAt(const ImVec2& p0,
     DrawBoldTextAt(draw, textPos, ApplyOpacity(cellTextColor, settings.gridOpacity), label, font,
                    fontSize);
 
-    if (settings.enableTooltips && context.raidData) {
-        std::optional<EncounterTooltipData> tooltipData;
-        if (context.isStrikePanel && context.strikeData) {
-            tooltipData = EncounterTooltip::BuildFromStrike(*context.strikeData, cell.id);
-        }
-        if (!tooltipData && !context.isStrikePanel) {
-            tooltipData = EncounterTooltip::BuildFromRaid(*context.raidData, cell.id);
-        }
-        if (!tooltipData && context.isStrikePanel) {
-            tooltipData = EncounterTooltip::BuildFromRaid(*context.raidData, cell.id);
-        }
-        if (tooltipData) {
-            if (!cell.abbreviation.empty()) {
-                tooltipData->abbreviation = cell.abbreviation;
+    if (settings.enableTooltips) {
+        if (context.isFractalsPanel && context.fractalMapData && context.instabilitiesData &&
+            (group.id == "CM" || group.isTomorrowFractal)) {
+            const auto map = context.fractalMapData->GetFractalByName(cell.id);
+            if (map.IsValid() && !map.scales.empty() &&
+                ImGui::IsMouseHoveringRect(p0, p1)) {
+                const std::string abbrev =
+                    context.fractalPersist
+                        ? context.fractalPersist->GetEncounterLabel(cell.id, cell.abbreviation)
+                        : cell.abbreviation;
+                FractalCmTooltip::ShowIfHovered(p0, p1, map, abbrev, map.scales.back(),
+                                                *context.fractalMapData,
+                                                *context.instabilitiesData);
             }
-            EncounterTooltip::ShowIfHovered(p0, p1, *tooltipData, *context.raidData,
-                                            context.mentorProgress, settings.showMentorProgress);
-        } else if (ImGui::IsMouseHoveringRect(p0, p1)) {
-            ImGui::SetTooltip("%s", cell.name.c_str());
+        } else if (context.raidData) {
+            std::optional<EncounterTooltipData> tooltipData;
+            if (context.isStrikePanel && context.strikeData) {
+                tooltipData = EncounterTooltip::BuildFromStrike(*context.strikeData, cell.id);
+            }
+            if (!tooltipData && !context.isStrikePanel) {
+                tooltipData = EncounterTooltip::BuildFromRaid(*context.raidData, cell.id);
+            }
+            if (!tooltipData && context.isStrikePanel) {
+                tooltipData = EncounterTooltip::BuildFromRaid(*context.raidData, cell.id);
+            }
+            if (tooltipData) {
+                if (!cell.abbreviation.empty()) {
+                    tooltipData->abbreviation = cell.abbreviation;
+                }
+                EncounterTooltip::ShowIfHovered(p0, p1, *tooltipData, *context.raidData,
+                                                context.mentorProgress, settings.showMentorProgress);
+            } else if (ImGui::IsMouseHoveringRect(p0, p1)) {
+                ImGui::SetTooltip("%s", cell.name.c_str());
+            }
         }
     }
 }

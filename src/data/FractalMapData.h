@@ -25,12 +25,14 @@ public:
     std::vector<int> challengeMotes;
     std::map<std::string, FractalMap> maps;
     std::map<std::string, std::string> scales;
+    std::map<std::string, int> instabilityAssets;
 
     static FractalMapData FromJson(const nlohmann::json& j);
 
     FractalMap GetFractalByName(const std::string& name) const;
     FractalMap GetFractalForScale(int scale) const;
     const FractalMap* GetFractalMapById(int mapId) const;
+    int GetInstabilityAssetId(const std::string& name) const;
 };
 
 }  // namespace rc

@@ -36,7 +36,9 @@ void RenderOptions(AppState& state) {
     ImGui::Spacing();
     SectionSubtext("Choose which fractal rows appear on the panel.");
 
-    if (SettingCheckbox("Show challenge motes", &state.settings.fractalChallengeMotes)) {
+    if (SettingCheckbox("Show challenge motes", &state.settings.fractalChallengeMotes,
+                        "Display CM fractals. Hover tooltip shows today's and tomorrow's "
+                        "instabilities.")) {
         if (state.fractalDataReady) {
             std::lock_guard lock(state.dataMutex);
             state.RebuildFractalGroups();

@@ -56,6 +56,7 @@ set(SRC_FILES
     src/data/StrikeData.cpp
     src/data/DailyBountyData.cpp
     src/data/FractalMapData.cpp
+    src/data/InstabilitiesData.cpp
     src/data/DungeonData.cpp
     src/services/HttpClient.cpp
     src/services/Gw2ApiClient.cpp
@@ -79,6 +80,7 @@ set(SRC_FILES
     src/ui/GridLayout.cpp
     src/ui/GridRenderer.cpp
     src/ui/EncounterTooltip.cpp
+    src/ui/FractalCmTooltip.cpp
     src/ui/OverlayPanel.cpp
     src/ui/GridMaskService.cpp
     src/ui/UiFontService.cpp
@@ -117,6 +119,7 @@ target_link_libraries(NexusRaidClears PRIVATE
     winhttp
     ws2_32
     crypt32
+    shell32
 )
 
 target_compile_definitions(NexusRaidClears PRIVATE

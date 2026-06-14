@@ -169,6 +169,7 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
                   "Fractal map data cache missing. Will download in background.");
         RequestStaticDataLoad();
     }
+    LoadInstabilitiesData();
 
     strikePersist.Load(strikePersistPath, strikeData);
     if (fractalDataReady) {
@@ -241,6 +242,7 @@ void AppState::LoadStaticDataWithNetwork() {
             fractalPersist.EnsureChallengeMoteDefaults(fractalMapData);
             fractalMapWatcher.DispatchCurrentFractalClears();
         }
+        LoadInstabilitiesData();
         if (api) {
             QuickAccessService::Refresh(api, *this);
             api->Log(LOGL_INFO, "NexusRaidClears", "Downloaded static data.");
@@ -272,6 +274,7 @@ bool AppState::LoadStaticDataFromCache() {
             fractalDataReady = true;
             RebuildFractalGroups();
         }
+        LoadInstabilitiesData();
         return true;
     } catch (...) {
         if (api) api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse cached static JSON.");
@@ -466,6 +469,10 @@ void AppState::RefreshTooltipServices() {
     mentorProgress.SetActiveAccount(accountName);
     DatAssetIconService::PreloadIndicators(raidData.powerDamageAssetId, raidData.condiDamageAssetId,
                                            raidData.defianceAssetId, raidData.mentorAssetId);
+}
+
+void AppState::LoadInstabilitiesData() {
+    instabilitiesDataReady = InstabilitiesData::LoadOrDownload(addonDir, instabilitiesData);
 }
 
 void AppState::RequestApiRefresh() {

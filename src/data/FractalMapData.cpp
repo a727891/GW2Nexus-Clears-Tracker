@@ -50,6 +50,13 @@ FractalMapData FractalMapData::FromJson(const nlohmann::json& j) {
             data.maps[it.key()] = std::move(map);
         }
     }
+    if (j.contains("instabilityAssets") && j["instabilityAssets"].is_object()) {
+        for (const auto& [name, assetId] : j["instabilityAssets"].items()) {
+            if (assetId.is_number_integer()) {
+                data.instabilityAssets[name] = assetId.get<int>();
+            }
+        }
+    }
     return data;
 }
 
@@ -80,6 +87,13 @@ const FractalMap* FractalMapData::GetFractalMapById(int mapId) const {
         }
     }
     return nullptr;
+}
+
+int FractalMapData::GetInstabilityAssetId(const std::string& name) const {
+    if (const auto it = instabilityAssets.find(name); it != instabilityAssets.end()) {
+        return it->second;
+    }
+    return 0;
 }
 
 }  // namespace rc

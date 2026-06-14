@@ -1,6 +1,7 @@
 #include "ui/OptionsPanel.h"
 
 #include "core/AppState.h"
+#include "core/Branding.h"
 #include "ui/OptionsCommon.h"
 #include "ui/OptionsTextureService.h"
 #include "ui/OptionsUiKit.h"
@@ -10,11 +11,23 @@
 #include <imgui.h>
 #include <mutex>
 
+#ifdef _WIN32
+#include <shellapi.h>
+#endif
+
 namespace rc {
 namespace OptionsGeneralTab {
 namespace {
 
-enum class Section { ApiSync = 0, CornerIcon, GlobalAppearance, Highlights, Colors };
+#ifdef _WIN32
+void OpenExternalUrl(const char* url) {
+    ShellExecuteA(nullptr, "open", url, nullptr, nullptr, SW_SHOWNORMAL);
+}
+#else
+void OpenExternalUrl(const char* url) { (void)url; }
+#endif
+
+enum class Section { ApiSync = 0, CornerIcon, GlobalAppearance, Highlights, Colors, About };
 
 void RenderApiSync(AppState& state) {
     using namespace OptionsUiKit;
@@ -244,15 +257,60 @@ void RenderColors(AppState& state) {
     SettingColorRgb("Call of the Mists text color", state.settings.colorCotm);
 }
 
+void RenderAbout() {
+    using namespace OptionsUiKit;
+
+    SectionHeading("About");
+    ImGui::TextWrapped(
+        "%s is a Nexus port of the Blish HUD Clears Tracker module. "
+        "It tracks your daily and weekly PvE instance clears for raids, raid encounters, "
+        "fractals, and dungeons using the Guild Wars 2 API.",
+        kDisplayName);
+
+    ImGui::Spacing();
+    if (ImGui::Button("Patch Notes")) {
+        OpenExternalUrl(kPatchNotesUrl);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Open patch notes in your default web browser.");
+    }
+
+    SectionHeading("Credits");
+    SectionSubtext("Developers");
+    ImGui::BulletText("Soeed — primary developer");
+    ImGui::BulletText("Abbadon — contributor");
+
+    ImGui::Spacing();
+    SectionSubtext("Thank you to:");
+    ImGui::BulletText(
+        "Freesnöw (BlishHUD) for continued static data and config file hosting");
+    ImGui::BulletText("Invisi for challenge mote instabilities information");
+    // ImGui::BulletText("Naru for French translations in the original Blish module");
+
+    ImGui::Spacing();
+    SectionSubtext("Inspiration");
+    ImGui::BulletText("Gw2TaCO");
+
+    SectionHeading("Links");
+    ImGui::TextWrapped("Original module:");
+    ImGui::TextWrapped("https://github.com/a727891/BlishHud-Raid-Clears");
+    ImGui::Spacing();
+    // ImGui::TextWrapped("Static encounter data:");
+    // ImGui::TextWrapped("https://bhm.blishhud.com/Soeed.RaidClears/static/v2/");
+    // ImGui::Spacing();
+    ImGui::TextWrapped("Challenge mote instabilities:");
+    ImGui::TextWrapped("https://github.com/Invisi/gw2-fotm-instabilities");
+}
+
 }  // namespace
 
 void Render(AppState& state, int& section) {
     using namespace OptionsUiKit;
 
     static const char* kSections[] = {"API & Sync", "Corner Icon", "Global Appearance",
-                                      "Highlights", "Colors"};
+                                      "Highlights", "Colors", "About"};
 
-    BeginTabPage(section, kSections, 5);
+    BeginTabPage(section, kSections, 6);
     ImGui::PushID("general");
     BeginContentPanel(OptionsTextureService::BackgroundTexture());
 
@@ -271,6 +329,9 @@ void Render(AppState& state, int& section) {
             break;
         case Section::Colors:
             RenderColors(state);
+            break;
+        case Section::About:
+            RenderAbout();
             break;
     }
 

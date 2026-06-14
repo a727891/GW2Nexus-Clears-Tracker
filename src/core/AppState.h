@@ -7,6 +7,7 @@
 #include "data/DailyBountyData.h"
 #include "data/DungeonData.h"
 #include "data/FractalMapData.h"
+#include "data/InstabilitiesData.h"
 #include "data/RaidData.h"
 #include "data/StrikeData.h"
 #include "services/ApiPollService.h"
@@ -56,6 +57,7 @@ public:
     StrikeData strikeData;
     DailyBountyData dailyBountyData;
     FractalMapData fractalMapData;
+    InstabilitiesData instabilitiesData;
 
     Gw2ApiClient gw2Api;
     ApiPollService apiPoll;
@@ -90,6 +92,7 @@ public:
     std::atomic<bool> staticDataLoadPending{false};
     bool staticDataReady = false;
     bool fractalDataReady = false;
+    bool instabilitiesDataReady = false;
 
     void Initialize(AddonAPI_t* apiPtr);
     void Shutdown();
@@ -105,6 +108,7 @@ public:
     void SyncEncounterVisibility();
     void ApplyEncounterLabel(const std::string& encounterId, const std::string& label);
     void RefreshTooltipServices();
+    void LoadInstabilitiesData();
     void OnApiPoll();
     void ApplyRaidClears();
     void ApplyNonWeeklyHighlights();
