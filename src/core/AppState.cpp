@@ -362,9 +362,10 @@ void AppState::ProcessPendingUiAssetsInit() {
         QuickAccessService::Refresh(api, *this);
     }
 
+    rc::GridMaskService::EnsureLoaded();
+
     if (!pendingUiAssetsInit.exchange(false)) return;
 
-    rc::GridMaskService::RequestMasks();
     if (api) {
         QuickAccessService::SyncVisibility(api, *this);
     }

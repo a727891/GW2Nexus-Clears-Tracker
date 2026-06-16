@@ -37,6 +37,11 @@ std::filesystem::path CacheDir() {
     return std::filesystem::path(g_addonDir) / StaticDataLoader::kCacheDirName;
 }
 
+bool MasksReady() {
+    const std::size_t expected = EmbeddedMasks::Count();
+    return expected > 0 && g_masks.size() >= expected;
+}
+
 bool LoadMaskFromMemory(const EmbeddedMasks::Asset& asset) {
     if (!g_api || !g_api->Textures_GetOrCreateFromMemory) return false;
 
@@ -72,7 +77,7 @@ void LoadMaskTextures() {
         LoadMaskFromMemory(*asset);
     }
 
-    if (!g_masks.empty()) return;
+    if (MasksReady()) return;
 
     for (const char* filename : kMaskFiles) {
         LoadMaskFromFile(filename);
@@ -88,13 +93,21 @@ void Initialize(AddonAPI_t* api, const std::string& addonDir) {
 
 void RequestMasks() { LoadMaskTextures(); }
 
+void EnsureLoaded() {
+    if (!g_api || HasMasks()) return;
+    LoadMaskTextures();
+}
+
+bool HasMasks() {
+    const std::size_t expected = EmbeddedMasks::Count();
+    return expected > 0 && g_masks.size() >= expected;
+}
+
 void Shutdown() {
     g_masks.clear();
     g_api = nullptr;
     g_addonDir.clear();
 }
-
-bool HasMasks() { return !g_masks.empty(); }
 
 OrganicCellStyle StyleForSeed(uint32_t seed) { return BuildStyle(seed); }
 
