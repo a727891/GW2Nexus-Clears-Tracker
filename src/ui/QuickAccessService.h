@@ -12,6 +12,7 @@ namespace QuickAccessService {
     void SyncVisibility(AddonAPI_t* api, AppState& state);
     void Refresh(AddonAPI_t* api, AppState& state);
     void OnShortcutActivated(AppState& state);
+    bool IsRegistered();
 }
 
 }  // namespace rc

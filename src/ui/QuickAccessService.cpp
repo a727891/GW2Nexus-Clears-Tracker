@@ -72,8 +72,9 @@ bool LoadTextureFromMemory(AddonAPI_t* api, const char* identifier) {
     const EmbeddedCornerIcons::Asset* asset = EmbeddedCornerIcons::Find(identifier);
     if (!asset) return false;
 
-    return api->Textures_GetOrCreateFromMemory(
-               identifier, const_cast<unsigned char*>(asset->data), asset->size) != nullptr;
+    Texture_t* texture = api->Textures_GetOrCreateFromMemory(
+        identifier, const_cast<unsigned char*>(asset->data), asset->size);
+    return texture && texture->Resource;
 }
 
 bool LoadTextureFromFile(AddonAPI_t* api,
@@ -81,17 +82,28 @@ bool LoadTextureFromFile(AddonAPI_t* api,
                          const std::filesystem::path& path) {
     if (!api || !api->Textures_GetOrCreateFromFile) return false;
     if (!std::filesystem::exists(path)) return false;
-    return api->Textures_GetOrCreateFromFile(identifier, path.string().c_str()) != nullptr;
+
+    Texture_t* texture =
+        api->Textures_GetOrCreateFromFile(identifier, path.string().c_str());
+    return texture && texture->Resource;
 }
 
-void LoadTextures(AddonAPI_t* api, const std::string& addonDir) {
+bool LoadTextures(AddonAPI_t* api, const std::string& addonDir) {
     if (LoadTextureFromMemory(api, kIconTex) && LoadTextureFromMemory(api, kIconHoverTex)) {
-        return;
+        return true;
     }
 
     const auto texturesDir = std::filesystem::path(addonDir) / "textures";
-    LoadTextureFromFile(api, kIconTex, texturesDir / "raidIconDark.png");
-    LoadTextureFromFile(api, kIconHoverTex, texturesDir / "raidIconBright.png");
+    return LoadTextureFromFile(api, kIconTex, texturesDir / "raidIconDark.png") &&
+           LoadTextureFromFile(api, kIconHoverTex, texturesDir / "raidIconBright.png");
+}
+
+bool TexturesReady(AddonAPI_t* api) {
+    if (!api || !api->Textures_Get) return false;
+
+    const Texture_t* icon = api->Textures_Get(kIconTex);
+    const Texture_t* hover = api->Textures_Get(kIconHoverTex);
+    return icon && icon->Resource && hover && hover->Resource;
 }
 
 std::string BuildTooltip(const AppState& state) {
@@ -136,7 +148,7 @@ void ReregisterShortcut(AddonAPI_t* api, AppState& state) {
 void Register(AddonAPI_t* api, AppState& state) {
     if (!api || registered_) return;
 
-    LoadTextures(api, state.addonDir);
+    if (!LoadTextures(api, state.addonDir) || !TexturesReady(api)) return;
 
     cachedTooltip_ = BuildTooltip(state);
     api->QuickAccess_Add(kShortcutId, kIconTex, kIconHoverTex, kTogglePanelsBind,
@@ -184,6 +196,8 @@ void SyncVisibility(AddonAPI_t* api, AppState& state) {
         Unregister(api);
     }
 }
+
+bool IsRegistered() { return registered_; }
 
 }  // namespace QuickAccessService
 }  // namespace rc

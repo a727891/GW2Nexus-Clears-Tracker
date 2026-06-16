@@ -364,11 +364,11 @@ void AppState::ProcessPendingUiAssetsInit() {
 
     rc::GridMaskService::EnsureLoaded();
 
-    if (!pendingUiAssetsInit.exchange(false)) return;
-
     if (api) {
         QuickAccessService::SyncVisibility(api, *this);
     }
+
+    pendingUiAssetsInit.exchange(false);
 }
 
 bool AppState::LoadInstabilitiesFromCache() {
