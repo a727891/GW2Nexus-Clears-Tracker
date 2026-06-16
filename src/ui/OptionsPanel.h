@@ -4,10 +4,6 @@ namespace rc {
 
 class AppState;
 
-namespace OptionsPanel {
-void Render(AppState& state);
-}
-
 namespace OptionsGeneralTab {
 void Render(AppState& state, int& section);
 }

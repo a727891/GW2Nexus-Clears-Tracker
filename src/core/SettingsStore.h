@@ -57,12 +57,12 @@ public:
     bool highlightCotm = true;
 
     ColorRGB colorText{255, 255, 255};
-    ColorRGB colorCleared{0, 255, 0};
-    ColorRGB colorNotCleared{200, 200, 200};
+    ColorRGB colorCleared{20, 120, 20};
+    ColorRGB colorNotCleared{79, 79, 79};
     ColorRGB colorUnknown{64, 64, 64};
     ColorRGB colorNonWeeklyBounty{204, 136, 0};
-    ColorRGB colorEmbolden{0, 0, 255};
-    ColorRGB colorCotm{255, 255, 0};
+    ColorRGB colorEmbolden{16, 16, 238};
+    ColorRGB colorCotm{243, 245, 39};
     ColorRGB colorDungeonFrequenter{255, 255, 0};
 
     void Load(const std::string& path);

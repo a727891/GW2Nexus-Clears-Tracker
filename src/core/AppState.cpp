@@ -13,6 +13,7 @@
 #include "services/StrikeClearsService.h"
 #include "ui/GridMaskService.h"
 #include "ui/QuickAccessService.h"
+#include "ui/SettingsWindow.h"
 #include "ui/MentorProgressPopupService.h"
 #include "ui/UiFontService.h"
 
@@ -182,6 +183,7 @@ void AppState::Shutdown() {
         rc::UiFontService::Shutdown(api);
         rc::DatAssetIconService::Shutdown();
         rc::GridMaskService::Shutdown();
+        rc::SettingsWindow::Shutdown(api);
     }
     const auto settingsPath = (std::filesystem::path(addonDir) / "settings.json").string();
     settings.Save(settingsPath);

@@ -1,4 +1,5 @@
 #include "ui/QuickAccessService.h"
+#include "ui/SettingsWindow.h"
 
 #include "core/AppState.h"
 #include "core/Branding.h"
@@ -25,6 +26,12 @@ void RenderContextMenu() {
     auto& settings = AppState::Instance().settings;
 
     // ImGui::TextDisabled(kDisplayName);
+    ImGui::Separator();
+
+    if (ImGui::Selectable("Open Settings")) {
+        SettingsWindow::Open(SettingsTab::General);
+    }
+
     ImGui::Separator();
 
     const char* raidsLabel = settings.raidPanel.visible ? "Hide Raid Panel" : "Show Raid Panel";

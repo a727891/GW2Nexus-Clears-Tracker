@@ -119,6 +119,7 @@ set(SRC_FILES
     src/ui/RaidPanel.cpp
     src/ui/StrikesPanel.cpp
     src/ui/OptionsPanel.cpp
+    src/ui/SettingsWindow.cpp
     src/ui/OptionsUiKit.cpp
     src/ui/ContentLogoService.cpp
     src/ui/OptionsCommon.cpp

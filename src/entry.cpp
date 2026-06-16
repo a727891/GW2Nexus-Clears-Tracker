@@ -7,7 +7,7 @@
 #include <imgui.h>
 #include "mumble/Mumble.h"
 #include "nexus/Nexus.h"
-#include "ui/OptionsPanel.h"
+#include "ui/SettingsWindow.h"
 #include "ui/MentorProgressPopupService.h"
 #include "ui/RaidPanel.h"
 #include <windows.h>
@@ -99,9 +99,15 @@ void AddonRender() {
     rc::FractalsPanel::Render(state);
     rc::DungeonsPanel::Render(state);
     rc::MentorProgressPopupService::Render(state);
+
+    if (rc::SettingsWindow::IsOpen()) {
+        rc::SettingsWindow::Render(state);
+    }
 }
 
-void AddonOptions() { rc::OptionsPanel::Render(rc::AppState::Instance()); }
+void AddonOptions() {
+    rc::OptionsPanel::RenderNexusConfigEntry(rc::AppState::Instance());
+}
 
 }  // namespace
 
