@@ -15,13 +15,19 @@ void Render(AppState& state) {
     if (!state.ShouldShowPanel(state.settings.raidPanel.visible)) return;
     if (!state.staticDataReady) return;
 
-    std::lock_guard lock(state.dataMutex);
-    const auto visibleGroups =
-        EncounterVisibilityFilter::FilterRaidGroups(state.raidGroups, state.raidVisibility);
-    const auto placement = GridLayout::ComputePlacement(visibleGroups, state.settings.panelLayout,
-                                                        state.settings.panelScale,
-                                                        state.settings.groupLabelDisplay);
-    if (!OverlayPanel::Begin("Raid Clears", state.settings.raidPanel, placement.contentSize,
+    std::vector<GridGroup> visibleGroups;
+    ImVec2 contentSize;
+    {
+        std::lock_guard lock(state.dataMutex);
+        visibleGroups =
+            EncounterVisibilityFilter::FilterRaidGroups(state.raidGroups, state.raidVisibility);
+        contentSize = GridLayout::ComputePlacement(visibleGroups, state.settings.panelLayout,
+                                                   state.settings.panelScale,
+                                                   state.settings.groupLabelDisplay)
+                          .contentSize;
+    }
+
+    if (!OverlayPanel::Begin("Raid Clears", state.settings.raidPanel, contentSize,
                              OverlayPanel::PanelRole::Raid, state.settings.lockPanelPosition)) {
         return;
     }
@@ -37,6 +43,7 @@ void Render(AppState& state) {
         ImVec2 strikeSize{};
         if (state.settings.anchorStrikesToRaidPanel ||
             state.settings.anchorFractalsToStrikesPanel) {
+            std::lock_guard lock(state.dataMutex);
             const auto visibleStrikeGroups = EncounterVisibilityFilter::FilterStrikeGroups(
                 state.strikeGroups, state.strikeVisibility);
             strikeSize = GridLayout::ComputePlacement(visibleStrikeGroups,
@@ -45,7 +52,7 @@ void Render(AppState& state) {
                                                       state.settings.groupLabelDisplay)
                              .contentSize;
         }
-        PanelAnchor::OnRaidDragged(state.settings, placement.contentSize, strikeSize);
+        PanelAnchor::OnRaidDragged(state.settings, contentSize, strikeSize);
     }
 }
 

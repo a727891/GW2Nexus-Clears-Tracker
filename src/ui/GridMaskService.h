@@ -12,6 +12,7 @@ namespace GridMaskService {
 void Initialize(AddonAPI_t* api, const std::string& addonDir);
 void RequestMasks();
 bool HasMasks();
+void Shutdown();
 
 struct OrganicCellStyle {
     ImTextureID texture = nullptr;

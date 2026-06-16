@@ -49,11 +49,31 @@ bool ApplyClearsTrackerManifest(const std::string& addonDir,
     return true;
 }
 
+void LoadPersistenceFromCache(AppState& state) {
+    const auto strikePersistPath =
+        (std::filesystem::path(state.addonDir) / "clearsTracker" / "strike_clears.json").string();
+    const auto fractalPersistPath =
+        (std::filesystem::path(state.addonDir) / "clearsTracker" / "fractal_clears.json").string();
+
+    if (state.staticDataReady) {
+        state.strikePersist.Load(strikePersistPath, state.strikeData);
+    }
+    if (state.fractalDataReady) {
+        state.fractalPersist.Load(fractalPersistPath, state.fractalMapData);
+        state.fractalPersist.EnsureChallengeMoteDefaults(state.fractalMapData);
+        state.fractalMapWatcher.DispatchCurrentFractalClears();
+    }
+}
+
 }  // namespace
 
 AppState& AppState::Instance() {
     static AppState state;
     return state;
+}
+
+bool AppState::IsWorkGenerationStale(uint64_t generation) const {
+    return workGeneration_.load(std::memory_order_acquire) != generation;
 }
 
 void AppState::Initialize(AddonAPI_t* apiPtr) {
@@ -72,9 +92,11 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
         settings.Save(settingsPath);
         if (accountRegistry.AccountsSnapshot().empty()) {
             const auto accountsPath = ApiAccountsPath();
-            std::thread([this, legacyKey, accountsPath]() {
+            std::thread([this, legacyKey, accountsPath, gen = workGeneration_.load()]() {
+                if (IsWorkGenerationStale(gen)) return;
                 Gw2ApiClient client;
                 const auto result = accountRegistry.RegisterKey(client, legacyKey);
+                if (IsWorkGenerationStale(gen)) return;
                 if (result.success) {
                     accountRegistry.Save(accountsPath);
                     pendingCharacterResolve.store(true);
@@ -92,7 +114,7 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     const auto initialCharacter = MumbleIdentity::ParseIdentityName(mumbleLink);
     characterName = initialCharacter;
     if (accountRegistry.ResolveActiveAccountFromCache(initialCharacter)) {
-        OnActiveAccountChanged();
+        pendingAccountChanged.store(true);
     } else {
         accountName = accountRegistry.ActiveAccountName().value_or("");
         mentorProgress.SetActiveAccount(accountName);
@@ -106,7 +128,6 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
 
     rc::UiFontService::Initialize(api, nexusLink);
     rc::GridMaskService::Initialize(api, addonDir);
-    rc::GridMaskService::RequestMasks();
     rc::DatAssetIconService::Initialize(api, addonDir);
 
     apiPoll.SetIntervalMinutes(settings.pollIntervalMinutes);
@@ -143,30 +164,24 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     trackedDailyReset_ = resets.LastDailyReset();
     trackedWeeklyReset_ = resets.LastWeeklyReset();
 
-    if (LoadStaticDataFromCache()) {
-        if (api) api->Log(LOGL_INFO, "NexusRaidClears", "Loaded static data from cache.");
-    } else if (api) {
-        api->Log(LOGL_WARNING, "NexusRaidClears",
-                  "Static data cache missing. Will sync from manifest.");
-    }
-
     RequestStaticDataLoad();
-
-    strikePersist.Load(strikePersistPath, strikeData);
-    if (fractalDataReady) {
-        fractalPersist.Load(fractalPersistPath, fractalMapData);
-        fractalPersist.EnsureChallengeMoteDefaults(fractalMapData);
-        fractalMapWatcher.DispatchCurrentFractalClears();
-    }
-    if (staticDataReady) {
-        RequestApiRefresh();
-    }
 }
 
 void AppState::Shutdown() {
+    workGeneration_.fetch_add(1, std::memory_order_release);
+    staticDataLoadPending.store(false);
+    pendingUiAssetsInit.store(false);
+    pendingQuickAccessRefresh.store(false);
+    apiRefreshPending.store(false);
+    pendingAccountChanged.store(false);
+    pendingCharacterResolve.store(false);
+    pendingTooltipRefresh.store(false);
+    accountResolveInFlight.store(false);
+
     if (api) {
         rc::UiFontService::Shutdown(api);
         rc::DatAssetIconService::Shutdown();
+        rc::GridMaskService::Shutdown();
     }
     const auto settingsPath = (std::filesystem::path(addonDir) / "settings.json").string();
     settings.Save(settingsPath);
@@ -180,10 +195,15 @@ void AppState::Shutdown() {
         (std::filesystem::path(addonDir) / "clearsTracker" / "fractal_clears.json").string();
     strikePersist.Save(strikePersistPath);
     fractalPersist.Save(fractalPersistPath);
+    api = nullptr;
 }
 
-void AppState::SyncStaticDataFromManifest() {
+void AppState::SyncStaticDataFromManifest(uint64_t generation) {
+    if (IsWorkGenerationStale(generation)) return;
+
     const auto syncResult = ClearsTrackerSync::SyncVersions(addonDir);
+    if (IsWorkGenerationStale(generation)) return;
+
     if (!syncResult.remoteManifestOk) {
         if (api) {
             api->Log(LOGL_WARNING, "NexusRaidClears",
@@ -200,77 +220,113 @@ void AppState::SyncStaticDataFromManifest() {
             if (!ok && api) {
                 api->Log(LOGL_WARNING, "NexusRaidClears",
                           "Failed to download core static JSON data.");
-            } else {
-                ReloadStaticDataFromCache();
+            } else if (ReloadStaticDataFromCache(false)) {
+                if (IsWorkGenerationStale(generation)) return;
+                LoadPersistenceFromCache(*this);
+                pendingUiAssetsInit.store(true);
             }
         }
         return;
     }
 
     if (syncResult.anyFileUpdated || !staticDataReady || !fractalDataReady || !instabilitiesDataReady) {
-        if (!ReloadStaticDataFromCache() && api) {
+        if (!ReloadStaticDataFromCache(false) && api) {
             api->Log(LOGL_WARNING, "NexusRaidClears",
                       "Manifest sync completed but cached static JSON is unavailable.");
         } else if (api) {
             api->Log(LOGL_INFO, "NexusRaidClears", "Static data manifest sync complete.");
         }
-    } else {
-        LoadClearsTrackerMetadata();
-        if (api) {
-            QuickAccessService::Refresh(api, *this);
+        if (IsWorkGenerationStale(generation)) return;
+        if (staticDataReady) {
+            LoadPersistenceFromCache(*this);
+            pendingUiAssetsInit.store(true);
         }
+    } else {
+        if (IsWorkGenerationStale(generation)) return;
+        LoadClearsTrackerMetadata();
+        pendingQuickAccessRefresh.store(true);
     }
 }
 
-bool AppState::LoadStaticDataFromCache() { return ReloadStaticDataFromCache(); }
+bool AppState::LoadStaticDataFromCache() { return ReloadStaticDataFromCache(false); }
 
-bool AppState::ReloadStaticDataFromCache() {
+bool AppState::ReloadStaticDataFromCache(bool loadUiAssets) {
     std::string raidJson, strikeJson, bountyJson;
     const bool ok = StaticDataLoader::LoadCached(addonDir, "raid_data.json", raidJson) &&
                     StaticDataLoader::LoadCached(addonDir, "strike_data.json", strikeJson) &&
                     StaticDataLoader::LoadCached(addonDir, "daily_bounties.json", bountyJson);
     if (!ok) return false;
 
+    RaidData newRaidData;
+    StrikeData newStrikeData;
+    DailyBountyData newDailyBountyData;
     try {
+        newRaidData = RaidData::FromJson(nlohmann::json::parse(raidJson));
+        newStrikeData = StrikeData::FromJson(nlohmann::json::parse(strikeJson));
+        newDailyBountyData = DailyBountyData::FromJson(nlohmann::json::parse(bountyJson));
+    } catch (...) {
+        if (api) api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse cached static JSON.");
+        return false;
+    }
+
+    FractalMapData newFractalMapData;
+    const bool hasFractalMap = LoadFractalMapDataFromCache(addonDir, newFractalMapData);
+
+    InstabilitiesData newInstabilitiesData;
+    const bool hasInstabilities = InstabilitiesData::LoadFromCache(addonDir, newInstabilitiesData);
+
+    std::string newMotd;
+    std::string newMotdId;
+    ApplyClearsTrackerManifest(addonDir, newMotd, newMotdId);
+
+    const bool hadFractalData = fractalDataReady;
+
+    {
         std::lock_guard lock(dataMutex);
-        raidData = RaidData::FromJson(nlohmann::json::parse(raidJson));
-        strikeData = StrikeData::FromJson(nlohmann::json::parse(strikeJson));
-        dailyBountyData = DailyBountyData::FromJson(nlohmann::json::parse(bountyJson));
+        raidData = std::move(newRaidData);
+        strikeData = std::move(newStrikeData);
+        dailyBountyData = std::move(newDailyBountyData);
         staticDataReady = true;
         weeklyBountyEncounters.Rebuild(dailyBountyData, resets);
         RebuildRaidGroups();
         RebuildStrikeGroups();
         SyncEncounterVisibility();
-        LoadClearsTrackerMetadata();
-        rc::GridMaskService::RequestMasks();
-        RefreshTooltipServices();
+        motd = std::move(newMotd);
+        motdId = std::move(newMotdId);
 
-        const bool hadFractalData = fractalDataReady;
-        if (LoadFractalMapDataFromCache(addonDir, fractalMapData)) {
+        if (hasFractalMap) {
+            fractalMapData = std::move(newFractalMapData);
             fractalDataReady = true;
             RebuildFractalGroups();
-            if (!hadFractalData) {
-                const auto fractalPersistPath =
-                    (std::filesystem::path(addonDir) / "clearsTracker" / "fractal_clears.json")
-                        .string();
-                fractalPersist.Load(fractalPersistPath, fractalMapData);
-                fractalPersist.EnsureChallengeMoteDefaults(fractalMapData);
-                fractalMapWatcher.DispatchCurrentFractalClears();
-            }
         } else {
             fractalDataReady = false;
         }
 
-        LoadInstabilitiesData();
+        if (hasInstabilities) {
+            instabilitiesData = std::move(newInstabilitiesData);
+            instabilitiesDataReady = true;
+        } else {
+            instabilitiesDataReady = false;
+        }
+    }
+
+    if (hasFractalMap && !hadFractalData) {
+        const auto fractalPersistPath =
+            (std::filesystem::path(addonDir) / "clearsTracker" / "fractal_clears.json").string();
+        fractalPersist.Load(fractalPersistPath, fractalMapData);
+        fractalPersist.EnsureChallengeMoteDefaults(fractalMapData);
+        fractalMapWatcher.DispatchCurrentFractalClears();
+    }
+
+    RefreshTooltipServices();
+
+    if (loadUiAssets) {
+        rc::GridMaskService::RequestMasks();
         if (api) {
             QuickAccessService::Refresh(api, *this);
         }
-        return true;
-    } catch (...) {
-        if (api) api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse cached static JSON.");
-        staticDataReady = false;
-        return false;
     }
+    return true;
 }
 
 void AppState::RequestStaticDataLoad() { staticDataLoadPending.store(true); }
@@ -288,12 +344,37 @@ bool AppState::LoadClearsTrackerMetadata() {
 void AppState::ProcessPendingStaticDataLoad() {
     if (!staticDataLoadPending.exchange(false)) return;
 
-    std::thread([this]() {
-        SyncStaticDataFromManifest();
+    const uint64_t generation = workGeneration_.load(std::memory_order_acquire);
+    std::thread([this, generation]() {
+        if (IsWorkGenerationStale(generation)) return;
+        SyncStaticDataFromManifest(generation);
+        if (IsWorkGenerationStale(generation)) return;
         if (staticDataReady) {
             RequestApiRefresh();
         }
     }).detach();
+}
+
+void AppState::ProcessPendingUiAssetsInit() {
+    if (pendingQuickAccessRefresh.exchange(false) && api) {
+        QuickAccessService::Refresh(api, *this);
+    }
+
+    if (!pendingUiAssetsInit.exchange(false)) return;
+
+    rc::GridMaskService::RequestMasks();
+    if (api) {
+        QuickAccessService::SyncVisibility(api, *this);
+    }
+}
+
+bool AppState::LoadInstabilitiesFromCache() {
+    instabilitiesDataReady = InstabilitiesData::LoadFromCache(addonDir, instabilitiesData);
+    return instabilitiesDataReady;
+}
+
+void AppState::LoadInstabilitiesData() {
+    instabilitiesDataReady = InstabilitiesData::LoadOrDownload(addonDir, instabilitiesData);
 }
 
 void AppState::RebuildRaidGroups() {
@@ -456,10 +537,6 @@ void AppState::RefreshTooltipServices() {
                                            raidData.defianceAssetId, raidData.mentorAssetId);
 }
 
-void AppState::LoadInstabilitiesData() {
-    instabilitiesDataReady = InstabilitiesData::LoadOrDownload(addonDir, instabilitiesData);
-}
-
 void AppState::RequestApiRefresh() {
     apiRefreshPending.store(true);
 }
@@ -467,7 +544,9 @@ void AppState::RequestApiRefresh() {
 void AppState::ProcessPendingApiRefresh() {
     if (!apiRefreshPending.exchange(false)) return;
 
-    std::thread([this]() {
+    const uint64_t generation = workGeneration_.load(std::memory_order_acquire);
+    std::thread([this, generation]() {
+        if (IsWorkGenerationStale(generation)) return;
         OnApiPoll();
     }).detach();
 }
@@ -477,9 +556,12 @@ void AppState::RequestAccountResolve() {
     if (accountResolveInFlight.exchange(true)) return;
 
     const auto character = characterName;
-    std::thread([this, character]() {
+    const uint64_t generation = workGeneration_.load(std::memory_order_acquire);
+    std::thread([this, character, generation]() {
+        if (IsWorkGenerationStale(generation)) return;
         Gw2ApiClient client;
         const bool changed = accountRegistry.ResolveActiveAccountWithNetwork(character, client);
+        if (IsWorkGenerationStale(generation)) return;
         accountResolveInFlight.store(false);
         if (changed) {
             pendingAccountChanged.store(true);
@@ -490,6 +572,8 @@ void AppState::RequestAccountResolve() {
 }
 
 void AppState::OnApiPoll() {
+    if (!api) return;
+
     const auto activeKey = accountRegistry.ActiveApiKey();
     if (!activeKey) {
         accountName.clear();
@@ -506,7 +590,7 @@ void AppState::OnApiPoll() {
         ApplyDungeonClears();
         ApplyDailyBountyClears();
         ApplyNonWeeklyHighlights();
-        if (api) QuickAccessService::Refresh(api, *this);
+        pendingQuickAccessRefresh.store(true);
         return;
     }
 
@@ -685,7 +769,7 @@ void AppState::OnActiveAccountChanged() {
     mapWatcher.DispatchCurrentStrikeClears();
     fractalMapWatcher.DispatchCurrentFractalClears();
     RequestApiRefresh();
-    if (api) QuickAccessService::Refresh(api, *this);
+    pendingQuickAccessRefresh.store(true);
 }
 
 void AppState::UpdateActiveCharacter(const std::string& newCharacterName) {
@@ -700,7 +784,7 @@ void AppState::UpdateActiveCharacter(const std::string& newCharacterName) {
     } else {
         accountName = accountRegistry.ActiveAccountName().value_or("");
         mentorProgress.SetActiveAccount(accountName);
-        if (api) QuickAccessService::Refresh(api, *this);
+        pendingQuickAccessRefresh.store(true);
         if (!newCharacterName.empty()) {
             RequestAccountResolve();
         }

@@ -15,25 +15,33 @@ void Render(AppState& state) {
     if (!state.ShouldShowPanel(state.settings.strikesPanel.visible)) return;
     if (!state.staticDataReady) return;
 
-    std::lock_guard lock(state.dataMutex);
-    const auto visibleRaidGroups =
-        EncounterVisibilityFilter::FilterRaidGroups(state.raidGroups, state.raidVisibility);
-    const auto visibleStrikeGroups = EncounterVisibilityFilter::FilterStrikeGroups(
-        state.strikeGroups, state.strikeVisibility);
-    const auto raidPlacement = GridLayout::ComputePlacement(
-        visibleRaidGroups, state.settings.panelLayout, state.settings.panelScale,
-        state.settings.groupLabelDisplay);
-    const auto strikePlacement = GridLayout::ComputePlacement(
-        visibleStrikeGroups, state.settings.panelLayout, state.settings.panelScale,
-        state.settings.groupLabelDisplay);
+    std::vector<GridGroup> visibleRaidGroups;
+    std::vector<GridGroup> visibleStrikeGroups;
+    ImVec2 raidContentSize;
+    ImVec2 strikeContentSize;
+    {
+        std::lock_guard lock(state.dataMutex);
+        visibleRaidGroups =
+            EncounterVisibilityFilter::FilterRaidGroups(state.raidGroups, state.raidVisibility);
+        visibleStrikeGroups = EncounterVisibilityFilter::FilterStrikeGroups(
+            state.strikeGroups, state.strikeVisibility);
+        raidContentSize = GridLayout::ComputePlacement(
+                              visibleRaidGroups, state.settings.panelLayout,
+                              state.settings.panelScale, state.settings.groupLabelDisplay)
+                              .contentSize;
+        strikeContentSize = GridLayout::ComputePlacement(
+                                visibleStrikeGroups, state.settings.panelLayout,
+                                state.settings.panelScale, state.settings.groupLabelDisplay)
+                                .contentSize;
+    }
 
     if (state.settings.anchorStrikesToRaidPanel &&
         !OverlayPanel::IsDragging(OverlayPanel::PanelRole::Strikes)) {
-        PanelAnchor::AlignStrikesToRaid(state.settings, raidPlacement.contentSize);
+        PanelAnchor::AlignStrikesToRaid(state.settings, raidContentSize);
     }
 
     if (!OverlayPanel::Begin("Raid Encounter Clears", state.settings.strikesPanel,
-                             strikePlacement.contentSize, OverlayPanel::PanelRole::Strikes,
+                             strikeContentSize, OverlayPanel::PanelRole::Strikes,
                              state.settings.lockPanelPosition)) {
         return;
     }
@@ -48,8 +56,7 @@ void Render(AppState& state) {
     const uint32_t screenH = state.nexusLink ? state.nexusLink->Height : 0;
     if (OverlayPanel::End(OverlayPanel::PanelRole::Strikes, state.settings.screenClamp, screenW,
                           screenH)) {
-        PanelAnchor::OnStrikesDragged(state.settings, raidPlacement.contentSize,
-                                       strikePlacement.contentSize);
+        PanelAnchor::OnStrikesDragged(state.settings, raidContentSize, strikeContentSize);
     }
 }
 

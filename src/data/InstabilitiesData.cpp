@@ -39,6 +39,20 @@ InstabilitiesData InstabilitiesData::FromJson(const nlohmann::json& j) {
     return data;
 }
 
+bool InstabilitiesData::LoadFromCache(const std::string& addonDir, InstabilitiesData& out) {
+    std::string json;
+    if (!StaticDataLoader::LoadCached(addonDir, "fractal_instabilities.json", json)) {
+        return false;
+    }
+
+    try {
+        out = FromJson(nlohmann::json::parse(json));
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 bool InstabilitiesData::LoadOrDownload(const std::string& addonDir, InstabilitiesData& out) {
     std::string json;
     if (!StaticDataLoader::LoadOrDownload(addonDir, "fractal_instabilities.json", json)) {

@@ -48,8 +48,6 @@ void AddonLoad(AddonAPI_t* api) {
 
     api->InputBinds_RegisterWithString(kTogglePanels, OnTogglePanels, "ALT+SHIFT+R");
 
-    rc::QuickAccessService::SyncVisibility(api, state);
-
     api->Log(LOGL_INFO, "NexusRaidClears", "Loaded.");
 }
 
@@ -73,6 +71,7 @@ void AddonRender() {
     state.TickResets();
     state.apiPoll.Update(delta);
     state.ProcessPendingStaticDataLoad();
+    state.ProcessPendingUiAssetsInit();
     state.ProcessPendingApiRefresh();
 
     if (state.pendingAccountChanged.exchange(false)) {

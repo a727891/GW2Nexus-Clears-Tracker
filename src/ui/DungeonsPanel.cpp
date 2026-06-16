@@ -33,13 +33,18 @@ std::vector<GridGroup> FilterDungeonGroups(const std::vector<GridGroup>& groups,
 void Render(AppState& state) {
     if (!state.ShouldShowPanel(state.settings.dungeonsPanel.visible)) return;
 
-    std::lock_guard lock(state.dataMutex);
-    const auto visibleGroups = FilterDungeonGroups(state.dungeonGroups, state.settings);
-    const auto placement = GridLayout::ComputePlacement(
-        visibleGroups, state.settings.panelLayout, state.settings.panelScale,
-        state.settings.groupLabelDisplay);
+    std::vector<GridGroup> visibleGroups;
+    ImVec2 contentSize;
+    {
+        std::lock_guard lock(state.dataMutex);
+        visibleGroups = FilterDungeonGroups(state.dungeonGroups, state.settings);
+        contentSize = GridLayout::ComputePlacement(
+                            visibleGroups, state.settings.panelLayout, state.settings.panelScale,
+                            state.settings.groupLabelDisplay)
+                            .contentSize;
+    }
 
-    if (!OverlayPanel::Begin("Dungeon Clears", state.settings.dungeonsPanel, placement.contentSize,
+    if (!OverlayPanel::Begin("Dungeon Clears", state.settings.dungeonsPanel, contentSize,
                              OverlayPanel::PanelRole::Dungeons,
                              state.settings.lockPanelPosition)) {
         return;

@@ -90,6 +90,9 @@ public:
     std::atomic<bool> pendingTooltipRefresh{false};
     std::atomic<bool> accountResolveInFlight{false};
     std::atomic<bool> staticDataLoadPending{false};
+    std::atomic<bool> pendingUiAssetsInit{false};
+    std::atomic<bool> pendingQuickAccessRefresh{false};
+    std::atomic<uint64_t> workGeneration_{0};
     bool staticDataReady = false;
     bool fractalDataReady = false;
     bool instabilitiesDataReady = false;
@@ -97,8 +100,10 @@ public:
     void Initialize(AddonAPI_t* apiPtr);
     void Shutdown();
     bool LoadStaticDataFromCache();
-    void SyncStaticDataFromManifest();
-    bool ReloadStaticDataFromCache();
+    void SyncStaticDataFromManifest(uint64_t workGeneration = 0);
+    bool LoadInstabilitiesFromCache();
+    void ProcessPendingUiAssetsInit();
+    bool ReloadStaticDataFromCache(bool loadUiAssets = true);
     bool LoadClearsTrackerMetadata();
     void RequestStaticDataLoad();
     void ProcessPendingStaticDataLoad();
@@ -127,6 +132,8 @@ public:
     void RegisterApiKey(const std::string& apiKey);
     void RemoveApiKey(const std::string& tokenId);
     std::string ApiAccountsPath() const;
+
+    bool IsWorkGenerationStale(uint64_t generation) const;
 };
 
 }  // namespace rc

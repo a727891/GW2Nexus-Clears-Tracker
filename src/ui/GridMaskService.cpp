@@ -84,10 +84,15 @@ void LoadMaskTextures() {
 void Initialize(AddonAPI_t* api, const std::string& addonDir) {
     g_api = api;
     g_addonDir = addonDir;
-    LoadMaskTextures();
 }
 
 void RequestMasks() { LoadMaskTextures(); }
+
+void Shutdown() {
+    g_masks.clear();
+    g_api = nullptr;
+    g_addonDir.clear();
+}
 
 bool HasMasks() { return !g_masks.empty(); }
 

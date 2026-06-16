@@ -13,6 +13,7 @@ public:
     std::vector<std::string> names;
 
     static InstabilitiesData FromJson(const nlohmann::json& j);
+    static bool LoadFromCache(const std::string& addonDir, InstabilitiesData& out);
     static bool LoadOrDownload(const std::string& addonDir, InstabilitiesData& out);
 
     std::vector<std::string> GetInstabsForLevelOnDay(int level, int day) const;
