@@ -32,7 +32,7 @@ std::string CachePath(int assetId) {
 }
 
 std::string TextureIdentifier(int assetId) {
-    return "NRC_DAT_" + std::to_string(assetId);
+    return "CLRTRK_DAT_" + std::to_string(assetId);
 }
 
 ImTextureID TextureFromFile(int assetId) {

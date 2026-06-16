@@ -11,7 +11,7 @@ namespace rc {
 namespace SettingsWindow {
 namespace {
 
-constexpr const char* kWindowId = "Clears Tracker Settings###NRC_SETTINGS_WINDOW";
+constexpr const char* kWindowId = "Clears Tracker Settings###CLRTRK_SETTINGS_WINDOW";
 
 bool open_ = false;
 bool escapeRegistered_ = false;

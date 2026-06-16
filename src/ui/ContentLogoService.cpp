@@ -62,7 +62,7 @@ LogoInfo LogoFromFile(const std::string& filename) {
     const auto path = (LogoDir() / filename).string();
     if (!std::filesystem::exists(path)) return info;
 
-    const std::string identifier = "NRC_LOGO_FILE_" + filename;
+    const std::string identifier = "CLRTRK_LOGO_FILE_" + filename;
     Texture_t* texture = g_api->Textures_GetOrCreateFromFile(identifier.c_str(), path.c_str());
     if (!texture || !texture->Resource) return info;
 

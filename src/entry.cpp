@@ -17,7 +17,7 @@ namespace {
 AddonAPI_t* g_api = nullptr;
 float g_lastFrameTime = 0.0f;
 
-constexpr const char* kTogglePanels = "NRC_TOGGLE_PANELS";
+constexpr const char* kTogglePanels = "CLRTRK_TOGGLE_PANELS";
 
 void AddonLoad(AddonAPI_t* api);
 void AddonUnload();

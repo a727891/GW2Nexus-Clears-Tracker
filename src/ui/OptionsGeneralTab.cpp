@@ -142,7 +142,7 @@ void RenderCornerIcon(AppState& state) {
     }
 
     ImGui::Spacing();
-    SectionSubtext("Panel visibility shortcut (NRC_TOGGLE_PANELS)");
+    SectionSubtext("Panel visibility shortcut (CLRTRK_TOGGLE_PANELS)");
     SettingCheckbox("Toggle raid panel on keybind / corner icon click",
                     &state.settings.keybindToggleRaids);
     SettingCheckbox("Toggle raid encounters on keybind / corner icon click",

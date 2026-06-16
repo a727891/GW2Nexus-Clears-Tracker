@@ -67,7 +67,7 @@ void RenderWindow(AppState& state, SettingsTab pendingTab, bool applyPendingTab)
     ImGui::Separator();
     ImGui::Spacing();
 
-    if (ImGui::BeginTabBar("##nrc_options_tabs", ImGuiTabBarFlags_None)) {
+    if (ImGui::BeginTabBar("##clrtrk_options_tabs", ImGuiTabBarFlags_None)) {
         if (ImGui::BeginTabItem("General", nullptr,
                                 PendingTabFlags(SettingsTab::General, pendingTab,
                                                 applyPendingTab))) {

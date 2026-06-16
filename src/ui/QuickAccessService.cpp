@@ -13,11 +13,11 @@ namespace rc {
 namespace QuickAccessService {
 namespace {
 
-constexpr const char* kShortcutId = "NRC_QUICKACCESS";
-constexpr const char* kTogglePanelsBind = "NRC_TOGGLE_PANELS";
-constexpr const char* kIconTex = "NRC_ICON";
-constexpr const char* kIconHoverTex = "NRC_ICON_HOVER";
-constexpr const char* kContextMenuId = "NRC_CTX_MENU";
+constexpr const char* kShortcutId = "CLRTRK_QUICKACCESS";
+constexpr const char* kTogglePanelsBind = "CLRTRK_TOGGLE_PANELS";
+constexpr const char* kIconTex = "CLRTRK_ICON";
+constexpr const char* kIconHoverTex = "CLRTRK_ICON_HOVER";
+constexpr const char* kContextMenuId = "CLRTRK_CTX_MENU";
 
 bool registered_ = false;
 std::string cachedTooltip_;

@@ -18,8 +18,8 @@ LOGO_FILENAME_TO_EXPANSION = {
 }
 
 CORNER_ICON_FILES = {
-    "raidIconDark.png": "NRC_ICON",
-    "raidIconBright.png": "NRC_ICON_HOVER",
+    "raidIconDark.png": "CLRTRK_ICON",
+    "raidIconBright.png": "CLRTRK_ICON_HOVER",
 }
 
 
@@ -62,7 +62,7 @@ def write_logos(logos_dir: Path, out_cpp: Path, out_h: Path) -> None:
             f"const size_t kLogoBlobSize_{symbol} = {len(data)};\n"
         )
         assets.append(
-            f'    {{"{expansion_id}", "NRC_LOGO_{symbol}", '
+            f'    {{"{expansion_id}", "CLRTRK_LOGO_{symbol}", '
             f"kLogoBlob_{symbol}, kLogoBlobSize_{symbol}}},"
         )
 
@@ -140,7 +140,7 @@ def write_masks(masks_dir: Path, out_cpp: Path, out_h: Path) -> None:
             f"const size_t kMaskBlobSize_{symbol} = {len(data)};\n"
         )
         assets.append(
-            f'    {{"{mask_path.name}", "NRC_MASK_{mask_path.name}", '
+            f'    {{"{mask_path.name}", "CLRTRK_MASK_{mask_path.name}", '
             f"kMaskBlob_{symbol}, kMaskBlobSize_{symbol}}},"
         )
 

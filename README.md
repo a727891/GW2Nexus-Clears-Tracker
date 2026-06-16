@@ -11,7 +11,7 @@ Track daily and weekly PvE clears — raids, strikes, fractals, and dungeons —
 - **Fractals** — recommended and daily tiers, CM selection, instability tooltips
 - **Dungeons** — path clear status from `/v2/account/dungeons`
 - **Customization** — layout, colors, labels, per-encounter visibility, screen clamp, stylized grid boxes
-- **Quick access** — corner icon and `NRC_TOGGLE_PANELS` keybind (default `ALT+SHIFT+R`)
+- **Quick access** — corner icon and `CLRTRK_TOGGLE_PANELS` keybind (default `ALT+SHIFT+R`)
 
 ## Requirements
 

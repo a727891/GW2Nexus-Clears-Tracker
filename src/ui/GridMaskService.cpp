@@ -54,7 +54,7 @@ bool LoadMaskFromFile(const char* filename) {
     const auto path = (CacheDir() / filename).string();
     if (!std::filesystem::exists(path)) return false;
 
-    const std::string identifier = "NRC_MASK_FILE_" + std::string(filename);
+    const std::string identifier = "CLRTRK_MASK_FILE_" + std::string(filename);
     Texture_t* texture = g_api->Textures_GetOrCreateFromFile(identifier.c_str(), path.c_str());
     if (!texture || !texture->Resource) return false;
 
