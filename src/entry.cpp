@@ -79,7 +79,7 @@ void AddonRender() {
         state.OnActiveAccountChanged();
     } else if (state.pendingCharacterResolve.exchange(false)) {
         const auto charName = rc::MumbleIdentity::ParseIdentityName(state.mumbleLink);
-        state.UpdateActiveCharacter(charName);
+        state.UpdateActiveCharacter(charName, true);
     } else if (state.pendingTooltipRefresh.exchange(false)) {
         state.accountName = state.accountRegistry.ActiveAccountName().value_or("");
         state.mentorProgress.SetActiveAccount(state.accountName);

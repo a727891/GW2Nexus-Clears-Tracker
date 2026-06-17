@@ -17,6 +17,8 @@ bool open_ = false;
 bool escapeRegistered_ = false;
 SettingsTab pendingTab_ = SettingsTab::General;
 bool pendingTabSet_ = false;
+int pendingGeneralSection_ = 0;
+bool pendingGeneralSectionSet_ = false;
 
 void RegisterCloseOnEscape(AddonAPI_t* api) {
     if (!api || !api->GUI_RegisterCloseOnEscape || escapeRegistered_) {
@@ -54,10 +56,14 @@ void HandleEscapeKey() {
 
 }  // namespace
 
-void Open(SettingsTab tab) {
+void Open(SettingsTab tab, int generalSection) {
     open_ = true;
     pendingTab_ = tab;
     pendingTabSet_ = true;
+    if (generalSection >= 0) {
+        pendingGeneralSection_ = generalSection;
+        pendingGeneralSectionSet_ = true;
+    }
     RegisterCloseOnEscape(AppState::Instance().api);
 }
 
@@ -66,12 +72,12 @@ void Close() {
     DeregisterCloseOnEscape(AppState::Instance().api);
 }
 
-void Toggle(SettingsTab tab) {
+void Toggle(SettingsTab tab, int generalSection) {
     if (open_) {
         Close();
         return;
     }
-    Open(tab);
+    Open(tab, generalSection);
 }
 
 bool IsOpen() { return open_; }
@@ -80,6 +86,7 @@ void Shutdown(AddonAPI_t* api) {
     DeregisterCloseOnEscape(api);
     open_ = false;
     pendingTabSet_ = false;
+    pendingGeneralSectionSet_ = false;
 }
 
 void Render(AppState& state) {
@@ -98,9 +105,13 @@ void Render(AppState& state) {
         return;
     }
 
-    OptionsPanel::RenderWindow(state, pendingTab_, pendingTabSet_);
+    OptionsPanel::RenderWindow(state, pendingTab_, pendingTabSet_, pendingGeneralSection_,
+                               pendingGeneralSectionSet_);
     if (pendingTabSet_) {
         pendingTabSet_ = false;
+    }
+    if (pendingGeneralSectionSet_) {
+        pendingGeneralSectionSet_ = false;
     }
 
     HandleEscapeKey();

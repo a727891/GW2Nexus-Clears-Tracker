@@ -775,8 +775,8 @@ void AppState::OnActiveAccountChanged() {
     pendingQuickAccessRefresh.store(true);
 }
 
-void AppState::UpdateActiveCharacter(const std::string& newCharacterName) {
-    if (newCharacterName == characterName &&
+void AppState::UpdateActiveCharacter(const std::string& newCharacterName, bool forceResolve) {
+    if (!forceResolve && newCharacterName == characterName &&
         newCharacterName == accountRegistry.LastResolvedCharacter()) {
         return;
     }
@@ -812,7 +812,7 @@ void AppState::RegisterApiKey(const std::string& apiKey) {
 void AppState::RemoveApiKey(const std::string& tokenId) {
     if (!accountRegistry.RemoveKey(tokenId)) return;
     accountRegistry.Save(ApiAccountsPath());
-    UpdateActiveCharacter(characterName);
+    UpdateActiveCharacter(characterName, true);
 }
 
 }  // namespace rc

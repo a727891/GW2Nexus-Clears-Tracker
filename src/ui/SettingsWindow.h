@@ -16,9 +16,12 @@ enum class SettingsTab : int {
 
 namespace SettingsWindow {
 
-void Open(SettingsTab tab = SettingsTab::General);
+constexpr int kNoGeneralSection = -1;
+constexpr int kGeneralSectionApiSync = 0;
+
+void Open(SettingsTab tab = SettingsTab::General, int generalSection = kNoGeneralSection);
 void Close();
-void Toggle(SettingsTab tab = SettingsTab::General);
+void Toggle(SettingsTab tab = SettingsTab::General, int generalSection = kNoGeneralSection);
 bool IsOpen();
 void Shutdown(AddonAPI_t* api);
 void Render(AppState& state);
@@ -28,7 +31,8 @@ void Render(AppState& state);
 namespace OptionsPanel {
 
 void RenderNexusConfigEntry(AppState& state);
-void RenderWindow(AppState& state, SettingsTab pendingTab, bool applyPendingTab);
+void RenderWindow(AppState& state, SettingsTab pendingTab, bool applyPendingTab,
+                  int pendingGeneralSection, bool applyPendingGeneralSection);
 
 }  // namespace OptionsPanel
 }  // namespace rc

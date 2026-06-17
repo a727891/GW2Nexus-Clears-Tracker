@@ -219,8 +219,7 @@ void RenderAbout() {
 
     SectionHeading("Credits");
     SectionSubtext("Developers");
-    ImGui::BulletText("Soeed - primary developer");
-    ImGui::BulletText("Abbadon - contributor");
+    ImGui::BulletText("Soeed");
 
     ImGui::Spacing();
     SectionSubtext("Thank you to:");
@@ -231,9 +230,9 @@ void RenderAbout() {
 
     ImGui::Spacing();
     SectionSubtext("Inspiration");
-    ImGui::BulletText("Gw2TaCO");
+    ImGui::BulletText("Gw2TaCO - raid tracking feature");
 
-    SectionHeading("Links");
+    SectionHeading("Important URLs");
     ImGui::TextWrapped("Original module:");
     ImGui::TextWrapped("https://github.com/a727891/BlishHud-Raid-Clears");
     ImGui::Spacing();

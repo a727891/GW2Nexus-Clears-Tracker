@@ -127,7 +127,7 @@ public:
     void ProcessPendingApiRefresh();
     void RequestAccountResolve();
     void TickResets();
-    void UpdateActiveCharacter(const std::string& characterName);
+    void UpdateActiveCharacter(const std::string& characterName, bool forceResolve = false);
     void OnActiveAccountChanged();
     void RegisterApiKey(const std::string& apiKey);
     void RemoveApiKey(const std::string& tokenId);
