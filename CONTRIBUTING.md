@@ -25,14 +25,11 @@ cmake -B build -G Ninja \
 cmake --build build
 ```
 
-Output: `build/NexusRaidClears.dll`
+Output: `build/ClearsTracker.dll`
 
 ### Deploy locally
 
-Copy the DLL to `<GW2>/addons/` and pre-seed static data under
-`<GW2>/addons/NexusRaidClears/clearsTracker/` so the addon does not block on
-first-load downloads. See [README.md](README.md) for details.
-
+Copy `ClearsTracker.dll` to `<GW2>/addons/`.
 ### Project layout
 
 | Path | Purpose |
@@ -63,7 +60,7 @@ at runtime. Dungeons are the main exception - they are hardcoded in C++.
 JSON data files are served from `.../static/v2/`. PNG textures and grid box masks
 are served from `.../static/` (no `v2/` prefix), matching the BlishHUD module.
 
-The addon caches them under `<GW2>/addons/NexusRaidClears/clearsTracker/`.
+The addon caches them under `<GW2>/addons/ClearsTracker/clearsTracker/`.
 HTTP requests to that host and to `assets.gw2dat.com` send
 `User-Agent: ClearsTracker-Nexus/<version>`.
 
@@ -194,7 +191,7 @@ When a new path is added (rare):
 1. Commit changes on the `bhud-static/Soeed.RaidClears` branch under `static/v2/`.
 2. Deploy to `bhm.blishhud.com` (Freesnöw's hosting - coordinate with him if you do not publish yourself).
 3. If `clears_tracker.json` lists new textures in `assets`, upload those PNGs too.
-4. Users with cached files get updates on **Refresh API** / addon reload when the hosted version changes. For local dev, copy updated JSON into `addons/NexusRaidClears/clearsTracker/`.
+4. Users with cached files get updates on **Refresh API** / addon reload when the hosted version changes.
 
 `clears_tracker.json` also carries `motd` / `motd_id` for the corner-icon message
 and `cache_bust` for asset invalidation - update when you want users to notice a
@@ -211,7 +208,7 @@ Use this when static data alone is not enough, or when shipping a Nexus-specific
    - `src/core/Branding.h` → `kVersion` and `kHttpUserAgent`
    - `src/entry.cpp` → `def.Version = {major, minor, patch, build}`
 3. Add an entry to [CHANGELOG.md](CHANGELOG.md).
-4. Build `NexusRaidClears.dll` and smoke-test with the [README test checklist](README.md#manual-test-checklist).
+4. Build `ClearsTracker.dll` and smoke-test with the [README test checklist](README.md#manual-test-checklist).
 5. Distribute the DLL to Nexus users (distribution method TBD for this repo).
 
 ---

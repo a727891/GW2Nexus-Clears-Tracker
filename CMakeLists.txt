@@ -180,7 +180,7 @@ if(CMAKE_CXX_COMPILER MATCHES "mingw" OR MINGW)
 endif()
 
 set_target_properties(NexusRaidClears PROPERTIES
-    OUTPUT_NAME "NexusRaidClears"
+    OUTPUT_NAME "ClearsTracker"
     PREFIX ""
     SUFFIX ".dll"
 )

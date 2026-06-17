@@ -1,5 +1,5 @@
 ### =============================================================================
-### GW2 API - NexusRaidClears registration tests
+### GW2 API - Clears Tracker registration tests
 ### VS Code extension: humao.rest-client (REST Client)
 ### https://marketplace.visualstudio.com/items?itemName=humao.rest-client
 ###
@@ -65,7 +65,7 @@ Accept: application/json
 ### Body: JSON array of strings, e.g. ["My Ranger", "My Mesmer"]
 ### Requires permission: characters
 ###
-### This is what NexusRaidClears expects and stores in api_accounts.json.
+### This is what Clears Tracker expects and stores in api_accounts.json.
 ### =============================================================================
 
 # @name characters

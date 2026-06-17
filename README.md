@@ -21,17 +21,13 @@ Track daily and weekly PvE clears - raids, strikes, fractals, and dungeons - in 
 
 ## Installation
 
-1. Copy `NexusRaidClears.dll` to `<GW2>/addons/` (directly in `addons/`, not a subfolder)
+1. Copy `ClearsTracker.dll` to `<GW2>/addons/` (directly in `addons/`, not a subfolder)
 2. Launch GW2 with Nexus enabled
 3. Enable **Clears Tracker** in Nexus addon settings
 4. Enter your API key in options and click **Save API Key**
 5. Enable the panels you want (Raids, Strikes, Fractals, Dungeons)
 
-Expansion logos and the corner icon are **embedded in the DLL** at build time. End users only need the single DLL file.
-
-On first run the addon downloads encounter metadata into
-`<GW2>/addons/NexusRaidClears/clearsTracker/`. Pre-seeding that JSON cache avoids a
-background download during load (see [Build & deploy](#build--deploy)).
+Expansion logos and the corner icon are **embedded in the DLL** at build time. End users only need the single DLL file. On first run the addon downloads encounter metadata and caches it under `<GW2>/addons/ClearsTracker/clearsTracker/`.
 
 ## Build & deploy
 
@@ -50,22 +46,16 @@ cmake -B build -G Ninja \
 cmake --build build
 ```
 
-Output: `build/NexusRaidClears.dll`
+Output: `build/ClearsTracker.dll`
 
 ### Deploy to local GW2
 
 ```bash
-./scripts/deploy-to-gw2.sh           # DLL + static JSON + corner icon textures
-./scripts/deploy-to-gw2.sh --ftue    # DLL only - test first-load downloads
+./scripts/deploy-to-gw2.sh
+./scripts/deploy-to-gw2.sh --release    # stripped dist/ export from build-release.sh
 ```
 
-Grid box masks are downloaded at runtime from the static host (not pre-seeded by
-the deploy script). Logos and the corner icon are embedded in the DLL. Pre-seeding
-`NexusRaidClears/clearsTracker/` JSON avoids blocking on first load for encounter
-metadata.
-
-A local deploy helper script may exist on your machine; it is not required for
-end users.
+Set `GW2_ADDONS_DIR` to override the default addons path.
 
 ### Nexus does not list the DLL
 
@@ -73,7 +63,7 @@ Rebuild with the provided `CMakeLists.txt` (static MinGW runtime). The DLL shoul
 only import Windows system libraries:
 
 ```bash
-x86_64-w64-mingw32-objdump -p build/NexusRaidClears.dll | rg "DLL Name"
+x86_64-w64-mingw32-objdump -p build/ClearsTracker.dll | rg "DLL Name"
 ```
 
 Expect `KERNEL32.dll`, `USER32.dll`, `WS2_32.dll`, `msvcrt.dll` - **not**
@@ -81,7 +71,7 @@ Expect `KERNEL32.dll`, `USER32.dll`, `WS2_32.dll`, `msvcrt.dll` - **not**
 
 Also confirm:
 
-- Filename is `NexusRaidClears.dll` (not `libNexusRaidClears.dll`)
+- Filename is `ClearsTracker.dll` (not `libClearsTracker.dll`)
 - File is x64 and sits directly in `addons/`
 
 ## Manual test checklist

@@ -34,7 +34,7 @@ void OnTogglePanels(const char*, bool isRelease) {
 
 void AddonLoad(AddonAPI_t* api) {
     g_api = api;
-    api->Log(LOGL_INFO, "NexusRaidClears", "AddonLoad starting.");
+    api->Log(LOGL_INFO, rc::kLogTag, "AddonLoad starting.");
 
     ImGui::SetCurrentContext(static_cast<ImGuiContext*>(api->ImguiContext));
     ImGui::SetAllocatorFunctions(
@@ -49,7 +49,7 @@ void AddonLoad(AddonAPI_t* api) {
 
     api->InputBinds_RegisterWithString(kTogglePanels, OnTogglePanels, "ALT+SHIFT+R");
 
-    api->Log(LOGL_INFO, "NexusRaidClears", "Loaded.");
+    api->Log(LOGL_INFO, rc::kLogTag, "Loaded.");
 }
 
 void AddonUnload() {
@@ -59,7 +59,7 @@ void AddonUnload() {
     g_api->InputBinds_Deregister(kTogglePanels);
     rc::QuickAccessService::Unregister(g_api);
     rc::AppState::Instance().Shutdown();
-    g_api->Log(LOGL_INFO, "NexusRaidClears", "Unloaded.");
+    g_api->Log(LOGL_INFO, rc::kLogTag, "Unloaded.");
     g_api = nullptr;
 }
 

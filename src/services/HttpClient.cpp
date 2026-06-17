@@ -54,7 +54,7 @@ HttpResponse HttpGetUrlEx(const std::string& url, const HttpRequestOptions& opti
 
     const bool moduleUserAgent = UsesModuleUserAgent(host);
     const std::wstring sessionAgent =
-        moduleUserAgent ? ToWide(V_HTTP_USER_AGENT) : L"NexusRaidClears-GW2API/1.0";
+        moduleUserAgent ? ToWide(V_HTTP_USER_AGENT) : L"ClearsTracker-GW2API/1.0";
 
     HINTERNET session = WinHttpOpen(sessionAgent.c_str(),
                                     WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,

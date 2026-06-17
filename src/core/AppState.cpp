@@ -1,4 +1,5 @@
 #include "core/AppState.h"
+#include "core/Branding.h"
 #include "core/MumbleIdentity.h"
 #include "core/StorageKeyUtil.h"
 
@@ -82,7 +83,7 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
     nexusLink = static_cast<NexusLinkData_t*>(api->DataLink_Get(DL_NEXUS_LINK));
     mumbleLink = static_cast<Mumble::Data*>(api->DataLink_Get(DL_MUMBLE_LINK));
 
-    addonDir = api->Paths_GetAddonDirectory("NexusRaidClears");
+    addonDir = api->Paths_GetAddonDirectory("ClearsTracker");
     const auto settingsPath = (std::filesystem::path(addonDir) / "settings.json").string();
     settings.Load(settingsPath);
 
@@ -102,11 +103,11 @@ void AppState::Initialize(AddonAPI_t* apiPtr) {
                     accountRegistry.Save(accountsPath);
                     pendingCharacterResolve.store(true);
                     if (api) {
-                        api->Log(LOGL_INFO, "NexusRaidClears",
+                        api->Log(LOGL_INFO, kLogTag,
                                   "Migrated legacy API key to registered accounts.");
                     }
                 } else if (api) {
-                    api->Log(LOGL_WARNING, "NexusRaidClears", result.message.c_str());
+                    api->Log(LOGL_WARNING, kLogTag, result.message.c_str());
                 }
             }).detach();
         }
@@ -208,7 +209,7 @@ void AppState::SyncStaticDataFromManifest(uint64_t generation) {
 
     if (!syncResult.remoteManifestOk) {
         if (api) {
-            api->Log(LOGL_WARNING, "NexusRaidClears",
+            api->Log(LOGL_WARNING, kLogTag,
                       "Failed to download clears_tracker.json manifest.");
         }
         if (!staticDataReady) {
@@ -220,7 +221,7 @@ void AppState::SyncStaticDataFromManifest(uint64_t generation) {
             StaticDataLoader::LoadOrDownload(addonDir, "fractal_maps.json", content);
             StaticDataLoader::LoadOrDownload(addonDir, "fractal_instabilities.json", content);
             if (!ok && api) {
-                api->Log(LOGL_WARNING, "NexusRaidClears",
+                api->Log(LOGL_WARNING, kLogTag,
                           "Failed to download core static JSON data.");
             } else if (ReloadStaticDataFromCache(false)) {
                 if (IsWorkGenerationStale(generation)) return;
@@ -233,10 +234,10 @@ void AppState::SyncStaticDataFromManifest(uint64_t generation) {
 
     if (syncResult.anyFileUpdated || !staticDataReady || !fractalDataReady || !instabilitiesDataReady) {
         if (!ReloadStaticDataFromCache(false) && api) {
-            api->Log(LOGL_WARNING, "NexusRaidClears",
+            api->Log(LOGL_WARNING, kLogTag,
                       "Manifest sync completed but cached static JSON is unavailable.");
         } else if (api) {
-            api->Log(LOGL_INFO, "NexusRaidClears", "Static data manifest sync complete.");
+            api->Log(LOGL_INFO, kLogTag, "Static data manifest sync complete.");
         }
         if (IsWorkGenerationStale(generation)) return;
         if (staticDataReady) {
@@ -267,7 +268,7 @@ bool AppState::ReloadStaticDataFromCache(bool loadUiAssets) {
         newStrikeData = StrikeData::FromJson(nlohmann::json::parse(strikeJson));
         newDailyBountyData = DailyBountyData::FromJson(nlohmann::json::parse(bountyJson));
     } catch (...) {
-        if (api) api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse cached static JSON.");
+        if (api) api->Log(LOGL_WARNING, kLogTag, "Failed to parse cached static JSON.");
         return false;
     }
 
@@ -336,7 +337,7 @@ void AppState::RequestStaticDataLoad() { staticDataLoadPending.store(true); }
 bool AppState::LoadClearsTrackerMetadata() {
     if (!ApplyClearsTrackerManifest(addonDir, motd, motdId)) {
         if (api) {
-            api->Log(LOGL_WARNING, "NexusRaidClears", "Failed to parse clears_tracker.json.");
+            api->Log(LOGL_WARNING, kLogTag, "Failed to parse clears_tracker.json.");
         }
         return false;
     }
@@ -800,7 +801,7 @@ void AppState::RegisterApiKey(const std::string& apiKey) {
                                          if (api) {
                                              const auto level =
                                                  result.success ? LOGL_INFO : LOGL_WARNING;
-                                             api->Log(level, "NexusRaidClears",
+                                             api->Log(level, kLogTag,
                                                       result.message.c_str());
                                          }
                                          if (result.success) {
