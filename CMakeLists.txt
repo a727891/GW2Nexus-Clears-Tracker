@@ -124,6 +124,7 @@ set(SRC_FILES
     src/ui/ContentLogoService.cpp
     src/ui/OptionsCommon.cpp
     src/ui/OptionsGeneralTab.cpp
+    src/ui/OptionsPanelAppearance.cpp
     src/ui/OptionsRaidsTab.cpp
     src/ui/OptionsStrikesTab.cpp
     src/ui/OptionsFractalsTab.cpp
@@ -183,3 +184,6 @@ set_target_properties(NexusRaidClears PROPERTIES
     PREFIX ""
     SUFFIX ".dll"
 )
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateAddonMetadata.cmake)
+configure_addon_metadata(NexusRaidClears "ClearsTracker-Nexus")

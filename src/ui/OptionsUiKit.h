@@ -47,7 +47,7 @@ void EndContentPanel();
 void BeginExpansionRow(const char* expansionId);
 void EndExpansionRow();
 
-void RenderGridPreview(const SettingsStore& settings);
+void RenderGridPreview(const SettingsStore& settings, const PanelAppearance& appearance);
 
 }  // namespace OptionsUiKit
 }  // namespace rc

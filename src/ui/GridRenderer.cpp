@@ -136,6 +136,8 @@ void DrawEncounterCellAt(const ImVec2& p0,
                          const EncounterCell& cell,
                          const GridGroup& group,
                          const SettingsStore& settings,
+                         const PanelAppearance& appearance,
+                         bool enableTooltips,
                          bool colorClears,
                          bool useNonWeeklyHighlight,
                          ImFont* font,
@@ -151,7 +153,7 @@ void DrawEncounterCellAt(const ImVec2& p0,
     const uint32_t styleSeed =
         GridMaskService::HashSeed(group.id, cell.id.empty() ? cell.name : cell.id);
     DrawCellBackground(draw, p0, width, cellHeight, fillColor,
-                       settings.organicGridBoxBackgrounds, styleSeed, settings.gridOpacity);
+                       settings.organicGridBoxBackgrounds, styleSeed, appearance.gridOpacity);
 
     const ImVec2 p1(p0.x + width, p0.y + cellHeight);
     const char* label = cell.abbreviation.empty() ? cell.name.c_str() : cell.abbreviation.c_str();
@@ -163,10 +165,10 @@ void DrawEncounterCellAt(const ImVec2& p0,
         settings.dungeonHighlightFrequenter) {
         cellTextColor = settings.colorDungeonFrequenter.ToImU32(1.0f);
     }
-    DrawBoldTextAt(draw, textPos, ApplyOpacity(cellTextColor, settings.gridOpacity), label, font,
+    DrawBoldTextAt(draw, textPos, ApplyOpacity(cellTextColor, appearance.gridOpacity), label, font,
                    fontSize);
 
-    if (settings.enableTooltips) {
+    if (enableTooltips) {
         if (context.isFractalsPanel && context.fractalMapData && context.instabilitiesData &&
             (group.id == "CM" || group.isTomorrowFractal)) {
             const auto map = context.fractalMapData->GetFractalByName(cell.id);
@@ -212,23 +214,25 @@ void DrawLabelCellAt(const ImVec2& p0,
                      const std::string& groupId,
                      GridLayout::LabelAlign align,
                      const SettingsStore& settings,
+                     const PanelAppearance& appearance,
+                     bool enableTooltips,
                      ImFont* font,
                      float fontSize,
                      uint32_t textColor) {
     ImDrawList* draw = ImGui::GetWindowDrawList();
     const uint32_t styleSeed = GridMaskService::HashSeed(groupId);
     DrawCellBackground(draw, p0, width, cellHeight, IM_COL32(40, 40, 40, 220),
-                       settings.organicGridBoxBackgrounds, styleSeed, settings.labelOpacity);
+                       settings.organicGridBoxBackgrounds, styleSeed, appearance.labelOpacity);
 
     const ImVec2 p1(p0.x + width, p0.y + cellHeight);
     const ImVec2 textSize = MeasureText(abbreviation, font, fontSize);
     float textX = p0.x + (width - textSize.x) * 0.5f;
     if (align == GridLayout::LabelAlign::Right) {
-        textX = p0.x + width - textSize.x - GridLayout::Scaled(4.0f, settings.panelScale);
+        textX = p0.x + width - textSize.x - GridLayout::Scaled(4.0f, appearance.panelScale);
     }
     DrawTextAt(draw, ImVec2(textX, p0.y + (cellHeight - textSize.y) * 0.5f),
-               ApplyOpacity(textColor, settings.labelOpacity), abbreviation, font, fontSize);
-    if (settings.enableTooltips && ImGui::IsMouseHoveringRect(p0, p1)) {
+               ApplyOpacity(textColor, appearance.labelOpacity), abbreviation, font, fontSize);
+    if (enableTooltips && ImGui::IsMouseHoveringRect(p0, p1)) {
         ImGui::SetTooltip("%s", tooltip);
     }
 }
@@ -237,6 +241,8 @@ void DrawGroupAt(const ImVec2& contentOrigin,
                  const GridGroup& group,
                  const GridLayout::GroupPlacement& placement,
                  const SettingsStore& settings,
+                 const PanelAppearance& appearance,
+                 bool enableTooltips,
                  bool colorClears,
                  bool useNonWeeklyHighlight,
                  ImFont* font,
@@ -245,19 +251,20 @@ void DrawGroupAt(const ImVec2& contentOrigin,
                  uint32_t textColor,
                  const GridDrawContext& context,
                  bool useDungeonFrequenter) {
-    const std::string groupLabel = GroupLabelText(group, settings.groupLabelDisplay);
+    const std::string groupLabel = GroupLabelText(group, appearance.groupLabelDisplay);
 
     for (const auto& cell : placement.cells) {
         const ImVec2 p0(contentOrigin.x + placement.origin.x + cell.position.x,
                         contentOrigin.y + placement.origin.y + cell.position.y);
         if (cell.isLabel) {
             DrawLabelCellAt(p0, cell.width, cellHeight, groupLabel.c_str(), group.name.c_str(),
-                            group.id, placement.labelAlign, settings, font, fontSize, textColor);
+                            group.id, placement.labelAlign, settings, appearance, enableTooltips,
+                            font, fontSize, textColor);
         } else if (cell.encounterIndex < group.encounters.size()) {
             DrawEncounterCellAt(p0, cell.width, cellHeight,
-                                group.encounters[cell.encounterIndex], group, settings, colorClears,
-                                useNonWeeklyHighlight, font, fontSize, textColor, context,
-                                useDungeonFrequenter);
+                                group.encounters[cell.encounterIndex], group, settings, appearance,
+                                enableTooltips, colorClears, useNonWeeklyHighlight, font, fontSize,
+                                textColor, context, useDungeonFrequenter);
         }
     }
 }
@@ -266,28 +273,30 @@ void DrawGroupAt(const ImVec2& contentOrigin,
 
 ImVec2 DrawGroups(const std::vector<GridGroup>& groups,
                   const SettingsStore& settings,
+                  const PanelAppearance& appearance,
+                  bool enableTooltips,
                   bool colorClears,
                   bool useNonWeeklyHighlight,
                   ImFont* font,
                   const GridDrawContext& context,
                   bool useDungeonFrequenter) {
-    const float scale = settings.panelScale > 0.0f ? settings.panelScale : 1.0f;
+    const float scale = appearance.panelScale > 0.0f ? appearance.panelScale : 1.0f;
     const float fontSize = EffectiveFontSize(font, scale);
     const float cellHeight = GridLayout::Scaled(GridLayout::kCellHeight, scale);
-    const PanelLayout layout = settings.panelLayout;
+    const PanelLayout layout = appearance.panelLayout;
     const auto placement =
-        GridLayout::ComputePlacement(groups, layout, scale, settings.groupLabelDisplay);
+        GridLayout::ComputePlacement(groups, layout, scale, appearance.groupLabelDisplay);
     const ImVec2 contentOrigin = ImGui::GetCursorScreenPos();
 
     ImGui::Dummy(placement.contentSize);
 
-    if (settings.panelBackgroundOpacity > 0.0f) {
+    if (appearance.panelBackgroundOpacity > 0.0f) {
         ImDrawList* draw = ImGui::GetWindowDrawList();
         const ImVec2 panelP1(contentOrigin.x + placement.contentSize.x,
                              contentOrigin.y + placement.contentSize.y);
         draw->AddRectFilled(contentOrigin, panelP1,
                             IM_COL32(0, 0, 0,
-                                     static_cast<int>(settings.panelBackgroundOpacity * 255.0f)));
+                                     static_cast<int>(appearance.panelBackgroundOpacity * 255.0f)));
     }
 
     size_t placementIndex = 0;
@@ -295,9 +304,9 @@ ImVec2 DrawGroups(const std::vector<GridGroup>& groups,
         if (group.encounters.empty()) continue;
         if (placementIndex >= placement.groups.size()) break;
         const uint32_t textColor = LabelTextColor(group, settings, context.raidData);
-        DrawGroupAt(contentOrigin, group, placement.groups[placementIndex], settings, colorClears,
-                    useNonWeeklyHighlight, font, fontSize, cellHeight, textColor, context,
-                    useDungeonFrequenter);
+        DrawGroupAt(contentOrigin, group, placement.groups[placementIndex], settings, appearance,
+                    enableTooltips, colorClears, useNonWeeklyHighlight, font, fontSize, cellHeight,
+                    textColor, context, useDungeonFrequenter);
         ++placementIndex;
     }
 

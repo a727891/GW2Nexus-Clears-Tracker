@@ -15,6 +15,8 @@ void Render(AppState& state) {
     if (!state.ShouldShowPanel(state.settings.strikesPanel.visible)) return;
     if (!state.staticDataReady) return;
 
+    const auto& raidAppearance = state.settings.Appearance(PanelKind::Raids);
+    const auto& strikeAppearance = state.settings.Appearance(PanelKind::Strikes);
     std::vector<GridGroup> visibleRaidGroups;
     std::vector<GridGroup> visibleStrikeGroups;
     ImVec2 raidContentSize;
@@ -26,12 +28,12 @@ void Render(AppState& state) {
         visibleStrikeGroups = EncounterVisibilityFilter::FilterStrikeGroups(
             state.strikeGroups, state.strikeVisibility);
         raidContentSize = GridLayout::ComputePlacement(
-                              visibleRaidGroups, state.settings.panelLayout,
-                              state.settings.panelScale, state.settings.groupLabelDisplay)
+                              visibleRaidGroups, raidAppearance.panelLayout,
+                              raidAppearance.panelScale, raidAppearance.groupLabelDisplay)
                               .contentSize;
         strikeContentSize = GridLayout::ComputePlacement(
-                                visibleStrikeGroups, state.settings.panelLayout,
-                                state.settings.panelScale, state.settings.groupLabelDisplay)
+                                visibleStrikeGroups, strikeAppearance.panelLayout,
+                                strikeAppearance.panelScale, strikeAppearance.groupLabelDisplay)
                                 .contentSize;
     }
 
@@ -51,7 +53,8 @@ void Render(AppState& state) {
                             .strikeData = &state.strikeData,
                             .mentorProgress = &state.mentorProgress,
                             .isStrikePanel = true};
-    GridRenderer::DrawGroups(visibleStrikeGroups, state.settings, true, true, font, context);
+    GridRenderer::DrawGroups(visibleStrikeGroups, state.settings, strikeAppearance,
+                             state.settings.strikesEnableTooltips, true, true, font, context);
     const uint32_t screenW = state.nexusLink ? state.nexusLink->Width : 0;
     const uint32_t screenH = state.nexusLink ? state.nexusLink->Height : 0;
     if (OverlayPanel::End(OverlayPanel::PanelRole::Strikes, state.settings.screenClamp, screenW,

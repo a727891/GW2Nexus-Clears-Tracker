@@ -15,15 +15,16 @@ void RealignAnchoredPanels(AppState& state) {
     const auto raidSize =
         GridLayout::ComputePlacement(
             EncounterVisibilityFilter::FilterRaidGroups(state.raidGroups, state.raidVisibility),
-            state.settings.panelLayout, state.settings.panelScale,
-            state.settings.groupLabelDisplay)
+            state.settings.raidAppearance.panelLayout, state.settings.raidAppearance.panelScale,
+            state.settings.raidAppearance.groupLabelDisplay)
             .contentSize;
     const auto strikeSize =
         GridLayout::ComputePlacement(
             EncounterVisibilityFilter::FilterStrikeGroups(state.strikeGroups,
                                                           state.strikeVisibility),
-            state.settings.panelLayout, state.settings.panelScale,
-            state.settings.groupLabelDisplay)
+            state.settings.strikesAppearance.panelLayout,
+            state.settings.strikesAppearance.panelScale,
+            state.settings.strikesAppearance.groupLabelDisplay)
             .contentSize;
     if (state.settings.anchorStrikesToRaidPanel) {
         PanelAnchor::AlignStrikesToRaid(state.settings, raidSize);

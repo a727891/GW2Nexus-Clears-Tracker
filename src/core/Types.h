@@ -22,6 +22,22 @@ enum class GroupLabelDisplay {
     Hidden,
 };
 
+enum class PanelKind {
+    Raids,
+    Strikes,
+    Fractals,
+    Dungeons,
+};
+
+struct PanelAppearance {
+    PanelLayout panelLayout = PanelLayout::Vertical;
+    GroupLabelDisplay groupLabelDisplay = GroupLabelDisplay::Abbreviation;
+    float panelScale = 1.0f;
+    float labelOpacity = 1.0f;
+    float gridOpacity = 0.8f;
+    float panelBackgroundOpacity = 0.0f;
+};
+
 struct ColorRGB {
     uint8_t r = 0;
     uint8_t g = 0;

@@ -23,7 +23,11 @@ void SectionHeading(const char* text) {
 void SectionSubtext(const char* text) { ImGui::TextColored(GrayColor(), "%s", text); }
 
 void WarningText(const char* text) {
-    ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "%s", text);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.6f, 0.2f, 1.0f));
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextWrapped("%s", text);
+    ImGui::PopTextWrapPos();
+    ImGui::PopStyleColor();
 }
 
 void DisabledGateText(const char* text) { ImGui::TextDisabled("%s", text); }
@@ -123,12 +127,12 @@ void EndExpansionRow() {
     ImGui::Spacing();
 }
 
-void RenderGridPreview(const SettingsStore& settings) {
+void RenderGridPreview(const SettingsStore& settings, const PanelAppearance& appearance) {
     SectionSubtext("Preview of encounter cell styling:");
     ImGui::Spacing();
 
-    const float cellWidth = 72.0f * settings.panelScale;
-    const float cellHeight = 28.0f * settings.panelScale;
+    const float cellWidth = 72.0f * appearance.panelScale;
+    const float cellHeight = 28.0f * appearance.panelScale;
     const ImVec2 origin = ImGui::GetCursorScreenPos();
     ImDrawList* draw = ImGui::GetWindowDrawList();
 
@@ -142,11 +146,11 @@ void RenderGridPreview(const SettingsStore& settings) {
         const ImVec2 p0(origin.x + static_cast<float>(i) * (cellWidth + 4.0f), origin.y);
         const ImVec2 p1(p0.x + cellWidth, p0.y + cellHeight);
 
-        uint32_t fill = settings.colorUnknown.ToImU32(settings.gridOpacity);
+        uint32_t fill = settings.colorUnknown.ToImU32(appearance.gridOpacity);
         if (cells[i].state == ClearState::Cleared) {
-            fill = settings.colorCleared.ToImU32(settings.gridOpacity);
+            fill = settings.colorCleared.ToImU32(appearance.gridOpacity);
         } else if (cells[i].state == ClearState::NotCleared) {
-            fill = settings.colorNotCleared.ToImU32(settings.gridOpacity);
+            fill = settings.colorNotCleared.ToImU32(appearance.gridOpacity);
         }
 
         if (settings.organicGridBoxBackgrounds && GridMaskService::HasMasks()) {

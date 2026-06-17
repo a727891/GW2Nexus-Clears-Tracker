@@ -1,26 +1,27 @@
 #include "ui/OptionsPanel.h"
 
 #include "core/AppState.h"
+#include "ui/EncounterSelectionPanel.h"
 #include "ui/LabelCustomizationPanel.h"
 #include "ui/OptionsCommon.h"
+#include "ui/OptionsPanelAppearance.h"
 #include "ui/OptionsUiKit.h"
-
-#include <imgui.h>
-#include <filesystem>
-#include <mutex>
 
 namespace rc {
 namespace OptionsFractalsTab {
 namespace {
 
-enum class Section { Options = 0, CustomizeLabels };
+enum class Section { OptionsAndStyle = 0, Selection, CustomizeLabels };
 
-void RenderOptions(AppState& state) {
+void RenderOptionsAndStyle(AppState& state) {
     using namespace OptionsUiKit;
 
     SectionHeading("Fractal Options");
 
     SettingCheckbox("Show fractals panel", &state.settings.fractalsPanel.visible);
+
+    SettingCheckbox("Enable mouse hover tooltips", &state.settings.fractalsEnableTooltips,
+                    "Shows enhanced encounter tooltips with boss icons and mechanic indicators.");
 
     if (SettingCheckbox("Anchor fractals panel to raid encounters panel",
                         &state.settings.anchorFractalsToStrikesPanel,
@@ -33,60 +34,18 @@ void RenderOptions(AppState& state) {
     }
 
     ImGui::Spacing();
-    SectionSubtext("Choose which fractal rows appear on the panel.");
+    SectionHeading("Panel Style");
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextColored(GrayColor(),
+                       "Customize this panel only. Global Appearance overwrites these settings.");
+    ImGui::PopTextWrapPos();
 
-    BeginExpansionRow("core");
-
-    if (SettingCheckbox("Show challenge motes", &state.settings.fractalChallengeMotes,
-                        "Display CM fractals. Hover tooltip shows today's and tomorrow's "
-                        "instabilities.")) {
-        if (state.fractalDataReady) {
-            std::lock_guard lock(state.dataMutex);
-            state.RebuildFractalGroups();
+    if (OptionsPanelAppearance::RenderFields(state.settings.fractalsAppearance, state.settings,
+                                             true)) {
+        if (state.settings.anchorFractalsToStrikesPanel) {
+            RealignAnchoredPanels(state);
         }
     }
-
-    if (state.settings.fractalChallengeMotes && state.fractalDataReady) {
-        ImGui::Indent();
-        std::lock_guard lock(state.dataMutex);
-        for (const int scale : state.fractalMapData.challengeMotes) {
-            const auto map = state.fractalMapData.GetFractalForScale(scale);
-            if (!map.IsValid()) continue;
-
-            bool visible = state.fractalPersist.IsChallengeMoteVisible(map.apiLabel);
-            if (ImGui::Checkbox(map.label.c_str(), &visible)) {
-                state.fractalPersist.SetChallengeMoteVisible(map.apiLabel, visible);
-                state.RebuildFractalGroups();
-                const auto path =
-                    (std::filesystem::path(state.addonDir) / "clearsTracker" /
-                     "fractal_clears.json")
-                        .string();
-                state.fractalPersist.Save(path);
-            }
-        }
-        ImGui::Unindent();
-    }
-
-    if (SettingCheckbox("Show daily tier fractals", &state.settings.fractalDailyTierN)) {
-        if (state.fractalDataReady) {
-            std::lock_guard lock(state.dataMutex);
-            state.RebuildFractalGroups();
-        }
-    }
-    if (SettingCheckbox("Show daily recommended fractals", &state.settings.fractalDailyRecs)) {
-        if (state.fractalDataReady) {
-            std::lock_guard lock(state.dataMutex);
-            state.RebuildFractalGroups();
-        }
-    }
-    if (SettingCheckbox("Show tomorrow tier fractals", &state.settings.fractalTomorrowTierN)) {
-        if (state.fractalDataReady) {
-            std::lock_guard lock(state.dataMutex);
-            state.RebuildFractalGroups();
-        }
-    }
-
-    EndExpansionRow();
 }
 
 }  // namespace
@@ -94,15 +53,18 @@ void RenderOptions(AppState& state) {
 void Render(AppState& state, int& section) {
     using namespace OptionsUiKit;
 
-    static const char* kSections[] = {"Options", "Customize Labels"};
+    static const char* kSections[] = {"Options and Style", "Selection", "Customize Labels"};
 
-    BeginTabPage(section, kSections, 2);
+    BeginTabPage(section, kSections, 3);
     ImGui::PushID("fractals");
     BeginContentPanel(nullptr);
 
     switch (static_cast<Section>(section)) {
-        case Section::Options:
-            RenderOptions(state);
+        case Section::OptionsAndStyle:
+            RenderOptionsAndStyle(state);
+            break;
+        case Section::Selection:
+            EncounterSelectionPanel::RenderFractalSelection(state);
             break;
         case Section::CustomizeLabels:
             LabelCustomizationPanel::RenderFractalLabels(state);

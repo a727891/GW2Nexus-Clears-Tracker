@@ -39,7 +39,143 @@ float ClampOpacity(float value, float minValue, float maxValue) {
     return value;
 }
 
+PanelLayout PanelLayoutFromString(const std::string& value) {
+    return value == "Horizontal" ? PanelLayout::Horizontal : PanelLayout::Vertical;
+}
+
+std::string PanelLayoutToString(PanelLayout layout) {
+    return layout == PanelLayout::Horizontal ? "Horizontal" : "Vertical";
+}
+
+GroupLabelDisplay GroupLabelDisplayFromString(const std::string& value) {
+    return value == "Hidden" ? GroupLabelDisplay::Hidden : GroupLabelDisplay::Abbreviation;
+}
+
+std::string GroupLabelDisplayToString(GroupLabelDisplay display) {
+    return display == GroupLabelDisplay::Hidden ? "Hidden" : "Abbreviation";
+}
+
+void ReadLegacyAppearanceFields(const nlohmann::json& j, PanelAppearance& appearance) {
+    if (j.contains("panelLayout")) {
+        appearance.panelLayout = PanelLayoutFromString(j["panelLayout"].get<std::string>());
+    }
+    if (j.contains("groupLabelDisplay")) {
+        appearance.groupLabelDisplay =
+            GroupLabelDisplayFromString(j["groupLabelDisplay"].get<std::string>());
+    }
+    if (j.contains("panelScale")) {
+        appearance.panelScale = j["panelScale"].get<float>();
+    }
+    if (j.contains("labelOpacity")) {
+        appearance.labelOpacity = ClampOpacity(j["labelOpacity"].get<float>(), 0.1f, 1.0f);
+    }
+    if (j.contains("gridOpacity")) {
+        appearance.gridOpacity = ClampOpacity(j["gridOpacity"].get<float>(), 0.1f, 1.0f);
+    }
+    if (j.contains("panelBackgroundOpacity")) {
+        appearance.panelBackgroundOpacity =
+            ClampOpacity(j["panelBackgroundOpacity"].get<float>(), 0.0f, 1.0f);
+    }
+}
+
+void ReadAppearanceObject(const nlohmann::json& j, PanelAppearance& appearance) {
+    if (j.contains("panelLayout")) {
+        appearance.panelLayout = PanelLayoutFromString(j["panelLayout"].get<std::string>());
+    }
+    if (j.contains("groupLabelDisplay")) {
+        appearance.groupLabelDisplay =
+            GroupLabelDisplayFromString(j["groupLabelDisplay"].get<std::string>());
+    }
+    if (j.contains("panelScale")) {
+        appearance.panelScale = j["panelScale"].get<float>();
+    }
+    if (j.contains("labelOpacity")) {
+        appearance.labelOpacity = ClampOpacity(j["labelOpacity"].get<float>(), 0.1f, 1.0f);
+    }
+    if (j.contains("gridOpacity")) {
+        appearance.gridOpacity = ClampOpacity(j["gridOpacity"].get<float>(), 0.1f, 1.0f);
+    }
+    if (j.contains("panelBackgroundOpacity")) {
+        appearance.panelBackgroundOpacity =
+            ClampOpacity(j["panelBackgroundOpacity"].get<float>(), 0.0f, 1.0f);
+    }
+}
+
+bool ReadTooltipFlag(const nlohmann::json& j,
+                     const char* tooltipKey,
+                     const char* appearanceKey,
+                     bool fallback) {
+    if (j.contains(tooltipKey)) {
+        return j[tooltipKey].get<bool>();
+    }
+    if (appearanceKey && j.contains(appearanceKey) && j[appearanceKey].contains("enableTooltips")) {
+        return j[appearanceKey]["enableTooltips"].get<bool>();
+    }
+    return fallback;
+}
+
+nlohmann::json AppearanceToJson(const PanelAppearance& appearance) {
+    return {
+        {"panelLayout", PanelLayoutToString(appearance.panelLayout)},
+        {"groupLabelDisplay", GroupLabelDisplayToString(appearance.groupLabelDisplay)},
+        {"panelScale", appearance.panelScale},
+        {"labelOpacity", appearance.labelOpacity},
+        {"gridOpacity", appearance.gridOpacity},
+        {"panelBackgroundOpacity", appearance.panelBackgroundOpacity},
+    };
+}
+
 }  // namespace
+
+PanelAppearance& SettingsStore::Appearance(PanelKind kind) {
+    switch (kind) {
+        case PanelKind::Raids:
+            return raidAppearance;
+        case PanelKind::Strikes:
+            return strikesAppearance;
+        case PanelKind::Fractals:
+            return fractalsAppearance;
+        case PanelKind::Dungeons:
+            return dungeonsAppearance;
+    }
+    return raidAppearance;
+}
+
+const PanelAppearance& SettingsStore::Appearance(PanelKind kind) const {
+    return const_cast<SettingsStore*>(this)->Appearance(kind);
+}
+
+void SettingsStore::ApplyGlobalAppearanceToAllPanels() {
+    raidAppearance = globalAppearance;
+    strikesAppearance = globalAppearance;
+    fractalsAppearance = globalAppearance;
+    dungeonsAppearance = globalAppearance;
+}
+
+bool& SettingsStore::EnableTooltips(PanelKind kind) {
+    switch (kind) {
+        case PanelKind::Raids:
+            return raidEnableTooltips;
+        case PanelKind::Strikes:
+            return strikesEnableTooltips;
+        case PanelKind::Fractals:
+            return fractalsEnableTooltips;
+        case PanelKind::Dungeons:
+            return dungeonsEnableTooltips;
+    }
+    return raidEnableTooltips;
+}
+
+const bool& SettingsStore::EnableTooltips(PanelKind kind) const {
+    return const_cast<SettingsStore*>(this)->EnableTooltips(kind);
+}
+
+void SettingsStore::ApplyGlobalTooltipsToAllPanels() {
+    raidEnableTooltips = globalEnableTooltips;
+    strikesEnableTooltips = globalEnableTooltips;
+    fractalsEnableTooltips = globalEnableTooltips;
+    dungeonsEnableTooltips = globalEnableTooltips;
+}
 
 void SettingsStore::Load(const std::string& path) {
     std::ifstream in(path);
@@ -58,22 +194,45 @@ void SettingsStore::Load(const std::string& path) {
     if (j.contains("dungeonsPanel")) {
         dungeonsPanel = WindowFromJson(j["dungeonsPanel"], dungeonsPanel);
     }
-    if (j.contains("panelLayout")) {
-        const auto value = j["panelLayout"].get<std::string>();
-        if (value == "Horizontal") {
-            panelLayout = PanelLayout::Horizontal;
-        } else {
-            panelLayout = PanelLayout::Vertical;
-        }
+
+    const bool hasLegacyAppearance = j.contains("panelLayout") || j.contains("panelScale") ||
+                                     j.contains("groupLabelDisplay") || j.contains("labelOpacity") ||
+                                     j.contains("gridOpacity") ||
+                                     j.contains("panelBackgroundOpacity") ||
+                                     j.contains("enableTooltips");
+
+    if (j.contains("globalAppearance")) {
+        ReadAppearanceObject(j["globalAppearance"], globalAppearance);
+    } else if (hasLegacyAppearance) {
+        ReadLegacyAppearanceFields(j, globalAppearance);
     }
-    if (j.contains("groupLabelDisplay")) {
-        const auto value = j["groupLabelDisplay"].get<std::string>();
-        if (value == "Hidden") {
-            groupLabelDisplay = GroupLabelDisplay::Hidden;
+
+    auto loadPanelAppearance = [&](const char* key, PanelAppearance& appearance) {
+        if (j.contains(key)) {
+            ReadAppearanceObject(j[key], appearance);
         } else {
-            groupLabelDisplay = GroupLabelDisplay::Abbreviation;
+            appearance = globalAppearance;
         }
-    }
+    };
+
+    loadPanelAppearance("raidAppearance", raidAppearance);
+    loadPanelAppearance("strikesAppearance", strikesAppearance);
+    loadPanelAppearance("fractalsAppearance", fractalsAppearance);
+    loadPanelAppearance("dungeonsAppearance", dungeonsAppearance);
+
+    const bool legacyFlatTooltips = j.contains("enableTooltips");
+    globalEnableTooltips =
+        ReadTooltipFlag(j, "globalEnableTooltips", "globalAppearance",
+                        legacyFlatTooltips ? j["enableTooltips"].get<bool>() : true);
+    raidEnableTooltips = ReadTooltipFlag(j, "raidEnableTooltips", "raidAppearance",
+                                         globalEnableTooltips);
+    strikesEnableTooltips = ReadTooltipFlag(j, "strikesEnableTooltips", "strikesAppearance",
+                                            globalEnableTooltips);
+    fractalsEnableTooltips = ReadTooltipFlag(j, "fractalsEnableTooltips", "fractalsAppearance",
+                                             globalEnableTooltips);
+    dungeonsEnableTooltips = ReadTooltipFlag(j, "dungeonsEnableTooltips", "dungeonsAppearance",
+                                             globalEnableTooltips);
+
     if (j.contains("keybindToggleRaids")) {
         keybindToggleRaids = j["keybindToggleRaids"].get<bool>();
     }
@@ -110,9 +269,6 @@ void SettingsStore::Load(const std::string& path) {
     }
     if (j.contains("screenClamp")) {
         screenClamp = j["screenClamp"].get<bool>();
-    }
-    if (j.contains("enableTooltips")) {
-        enableTooltips = j["enableTooltips"].get<bool>();
     }
     if (j.contains("showMentorProgress")) {
         showMentorProgress = j["showMentorProgress"].get<bool>();
@@ -155,16 +311,6 @@ void SettingsStore::Load(const std::string& path) {
             dungeonVisible[i] = j["dungeonVisible"][i].get<bool>();
         }
     }
-    if (j.contains("panelScale")) panelScale = j["panelScale"].get<float>();
-    if (j.contains("labelOpacity")) {
-        labelOpacity = ClampOpacity(j["labelOpacity"].get<float>(), 0.1f, 1.0f);
-    }
-    if (j.contains("gridOpacity")) {
-        gridOpacity = ClampOpacity(j["gridOpacity"].get<float>(), 0.1f, 1.0f);
-    }
-    if (j.contains("panelBackgroundOpacity")) {
-        panelBackgroundOpacity = ClampOpacity(j["panelBackgroundOpacity"].get<float>(), 0.0f, 1.0f);
-    }
     if (j.contains("highlightEmbolden")) highlightEmbolden = j["highlightEmbolden"].get<bool>();
     if (j.contains("highlightCotm")) highlightCotm = j["highlightCotm"].get<bool>();
     if (j.contains("colorText")) colorText = ColorFromJson(j["colorText"], colorText);
@@ -188,9 +334,16 @@ void SettingsStore::Save(const std::string& path) const {
         {"strikesPanel", WindowToJson(strikesPanel)},
         {"fractalsPanel", WindowToJson(fractalsPanel)},
         {"dungeonsPanel", WindowToJson(dungeonsPanel)},
-        {"panelLayout", panelLayout == PanelLayout::Horizontal ? "Horizontal" : "Vertical"},
-        {"groupLabelDisplay",
-         groupLabelDisplay == GroupLabelDisplay::Hidden ? "Hidden" : "Abbreviation"},
+        {"globalAppearance", AppearanceToJson(globalAppearance)},
+        {"raidAppearance", AppearanceToJson(raidAppearance)},
+        {"strikesAppearance", AppearanceToJson(strikesAppearance)},
+        {"fractalsAppearance", AppearanceToJson(fractalsAppearance)},
+        {"dungeonsAppearance", AppearanceToJson(dungeonsAppearance)},
+        {"globalEnableTooltips", globalEnableTooltips},
+        {"raidEnableTooltips", raidEnableTooltips},
+        {"strikesEnableTooltips", strikesEnableTooltips},
+        {"fractalsEnableTooltips", fractalsEnableTooltips},
+        {"dungeonsEnableTooltips", dungeonsEnableTooltips},
         {"keybindToggleRaids", keybindToggleRaids},
         {"keybindToggleStrikes", keybindToggleStrikes},
         {"keybindToggleFractals", keybindToggleFractals},
@@ -203,7 +356,6 @@ void SettingsStore::Save(const std::string& path) const {
         {"organicGridBoxBackgrounds", organicGridBoxBackgrounds},
         {"lockPanelPosition", lockPanelPosition},
         {"screenClamp", screenClamp},
-        {"enableTooltips", enableTooltips},
         {"showMentorProgress", showMentorProgress},
         {"showMentorProgressPopup", showMentorProgressPopup},
         {"mentorProgressPopupReposition", mentorProgressPopupReposition},
@@ -217,10 +369,6 @@ void SettingsStore::Save(const std::string& path) const {
         {"dungeonFrequenterVisible", dungeonFrequenterVisible},
         {"dungeonHighlightFrequenter", dungeonHighlightFrequenter},
         {"dungeonVisible", dungeonVisible},
-        {"panelScale", panelScale},
-        {"labelOpacity", labelOpacity},
-        {"gridOpacity", gridOpacity},
-        {"panelBackgroundOpacity", panelBackgroundOpacity},
         {"highlightEmbolden", highlightEmbolden},
         {"highlightCotm", highlightCotm},
         {"colorText", ColorToJson(colorText)},

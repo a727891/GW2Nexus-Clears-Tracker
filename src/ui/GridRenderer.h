@@ -30,6 +30,8 @@ struct GridDrawContext {
 namespace GridRenderer {
 ImVec2 DrawGroups(const std::vector<GridGroup>& groups,
                   const SettingsStore& settings,
+                  const PanelAppearance& appearance,
+                  bool enableTooltips,
                   bool colorClears,
                   bool useNonWeeklyHighlight = false,
                   ImFont* font = nullptr,

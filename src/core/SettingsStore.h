@@ -15,13 +15,17 @@ public:
     WindowState fractalsPanel{true, 364.0f, 581.0f};
     WindowState dungeonsPanel{true, 364.0f, 675.0f};
 
-    PanelLayout panelLayout = PanelLayout::Vertical;
-    GroupLabelDisplay groupLabelDisplay = GroupLabelDisplay::Abbreviation;
-    float panelScale = 1.0f;
+    PanelAppearance globalAppearance;
+    PanelAppearance raidAppearance;
+    PanelAppearance strikesAppearance;
+    PanelAppearance fractalsAppearance;
+    PanelAppearance dungeonsAppearance;
 
-    float labelOpacity = 1.0f;
-    float gridOpacity = 0.8f;
-    float panelBackgroundOpacity = 0.0f;
+    bool globalEnableTooltips = true;
+    bool raidEnableTooltips = true;
+    bool strikesEnableTooltips = true;
+    bool fractalsEnableTooltips = true;
+    bool dungeonsEnableTooltips = true;
 
     bool keybindToggleRaids = true;
     bool keybindToggleStrikes = true;
@@ -36,7 +40,6 @@ public:
     bool organicGridBoxBackgrounds = true;
     bool lockPanelPosition = false;
     bool screenClamp = true;
-    bool enableTooltips = true;
     bool showMentorProgress = true;
     bool showMentorProgressPopup = false;
     bool mentorProgressPopupReposition = false;
@@ -64,6 +67,13 @@ public:
     ColorRGB colorEmbolden{16, 16, 238};
     ColorRGB colorCotm{243, 245, 39};
     ColorRGB colorDungeonFrequenter{255, 255, 0};
+
+    PanelAppearance& Appearance(PanelKind kind);
+    const PanelAppearance& Appearance(PanelKind kind) const;
+    bool& EnableTooltips(PanelKind kind);
+    const bool& EnableTooltips(PanelKind kind) const;
+    void ApplyGlobalAppearanceToAllPanels();
+    void ApplyGlobalTooltipsToAllPanels();
 
     void Load(const std::string& path);
     void Save(const std::string& path) const;

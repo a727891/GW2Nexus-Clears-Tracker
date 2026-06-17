@@ -26,12 +26,13 @@ void AlignChildToParent(WindowState& child,
 }
 
 void AlignStrikesToRaid(SettingsStore& settings, ImVec2 raidSize) {
-    AlignChildToParent(settings.strikesPanel, settings.raidPanel, raidSize, settings.panelLayout);
+    AlignChildToParent(settings.strikesPanel, settings.raidPanel, raidSize,
+                       settings.strikesAppearance.panelLayout);
 }
 
 void AlignFractalsToStrikes(SettingsStore& settings, ImVec2 strikeSize) {
     AlignChildToParent(settings.fractalsPanel, settings.strikesPanel, strikeSize,
-                       settings.panelLayout);
+                       settings.fractalsAppearance.panelLayout);
 }
 
 void OnRaidDragged(SettingsStore& settings, ImVec2 raidSize, ImVec2 strikeSize) {
@@ -45,7 +46,7 @@ void OnRaidDragged(SettingsStore& settings, ImVec2 raidSize, ImVec2 strikeSize) 
 
 void OnStrikesDragged(SettingsStore& settings, ImVec2 raidSize, ImVec2 strikeSize) {
     if (settings.anchorStrikesToRaidPanel) {
-        if (settings.panelLayout == PanelLayout::Horizontal) {
+        if (settings.strikesAppearance.panelLayout == PanelLayout::Horizontal) {
             settings.raidPanel.posX =
                 SnapPos(settings.strikesPanel.posX - raidSize.x - kPanelPadding);
             settings.raidPanel.posY = SnapPos(settings.strikesPanel.posY);
@@ -65,7 +66,7 @@ void OnStrikesDragged(SettingsStore& settings, ImVec2 raidSize, ImVec2 strikeSiz
 void OnFractalsDragged(SettingsStore& settings, ImVec2 raidSize, ImVec2 strikeSize) {
     if (!settings.anchorFractalsToStrikesPanel) return;
 
-    if (settings.panelLayout == PanelLayout::Horizontal) {
+    if (settings.fractalsAppearance.panelLayout == PanelLayout::Horizontal) {
         settings.strikesPanel.posX =
             SnapPos(settings.fractalsPanel.posX - strikeSize.x - kPanelPadding);
         settings.strikesPanel.posY = SnapPos(settings.fractalsPanel.posY);
@@ -76,7 +77,7 @@ void OnFractalsDragged(SettingsStore& settings, ImVec2 raidSize, ImVec2 strikeSi
     }
 
     if (settings.anchorStrikesToRaidPanel) {
-        if (settings.panelLayout == PanelLayout::Horizontal) {
+        if (settings.strikesAppearance.panelLayout == PanelLayout::Horizontal) {
             settings.raidPanel.posX =
                 SnapPos(settings.strikesPanel.posX - raidSize.x - kPanelPadding);
             settings.raidPanel.posY = SnapPos(settings.strikesPanel.posY);

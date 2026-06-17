@@ -1,6 +1,8 @@
 #include "ui/OptionsPanel.h"
 
 #include "core/AppState.h"
+#include "ui/EncounterSelectionPanel.h"
+#include "ui/OptionsPanelAppearance.h"
 #include "ui/OptionsUiKit.h"
 
 #include <imgui.h>
@@ -10,36 +12,35 @@ namespace rc {
 namespace OptionsDungeonsTab {
 namespace {
 
-enum class Section { Options = 0, Colors };
+enum class Section { OptionsAndStyle = 0, Selection };
 
-void RenderOptions(AppState& state) {
+void RenderOptionsAndStyle(AppState& state) {
     using namespace OptionsUiKit;
 
     SectionHeading("Dungeon Options");
 
     SettingCheckbox("Show dungeons panel", &state.settings.dungeonsPanel.visible);
 
+    SettingCheckbox("Enable mouse hover tooltips", &state.settings.dungeonsEnableTooltips,
+                    "Shows enhanced encounter tooltips with boss icons and mechanic indicators.");
+
     SettingCheckbox("Show frequenter summary row", &state.settings.dungeonFrequenterVisible);
     SettingCheckbox("Highlight frequented paths", &state.settings.dungeonHighlightFrequenter);
 
     ImGui::Spacing();
-    SectionSubtext("Toggle individual dungeon columns on the panel.");
+    SectionHeading("Panel Style");
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextColored(GrayColor(),
+                       "Customize this panel only. Global Appearance overwrites these settings.");
+    ImGui::PopTextWrapPos();
 
-    BeginExpansionRow("core");
+    OptionsPanelAppearance::RenderFields(state.settings.dungeonsAppearance, state.settings, true);
 
-    static const char* kDungeonNames[] = {"AC", "CM", "TA", "SE", "CoF", "HW", "CoE", "Arah"};
-    for (size_t i = 0; i < state.settings.dungeonVisible.size(); ++i) {
-        ImGui::Checkbox(kDungeonNames[i], &state.settings.dungeonVisible[i]);
-    }
-
-    EndExpansionRow();
-}
-
-void RenderColors(AppState& state) {
-    using namespace OptionsUiKit;
-
+    ImGui::Spacing();
     SectionHeading("Dungeon Colors");
-    SectionSubtext("Color used when frequented dungeon paths are highlighted.");
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextColored(GrayColor(), "Color used when frequented dungeon paths are highlighted.");
+    ImGui::PopTextWrapPos();
 
     if (SettingColorRgb("Frequenter text color", state.settings.colorDungeonFrequenter)) {
         std::lock_guard lock(state.dataMutex);
@@ -52,18 +53,18 @@ void RenderColors(AppState& state) {
 void Render(AppState& state, int& section) {
     using namespace OptionsUiKit;
 
-    static const char* kSections[] = {"Options", "Colors"};
+    static const char* kSections[] = {"Options and Style", "Selection"};
 
     BeginTabPage(section, kSections, 2);
     ImGui::PushID("dungeons");
     BeginContentPanel(nullptr);
 
     switch (static_cast<Section>(section)) {
-        case Section::Options:
-            RenderOptions(state);
+        case Section::OptionsAndStyle:
+            RenderOptionsAndStyle(state);
             break;
-        case Section::Colors:
-            RenderColors(state);
+        case Section::Selection:
+            EncounterSelectionPanel::RenderDungeonSelection(state);
             break;
     }
 

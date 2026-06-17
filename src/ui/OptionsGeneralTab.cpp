@@ -3,6 +3,7 @@
 #include "core/AppState.h"
 #include "core/Branding.h"
 #include "ui/OptionsCommon.h"
+#include "ui/OptionsPanelAppearance.h"
 #include "ui/OptionsUiKit.h"
 #include "ui/QuickAccessService.h"
 
@@ -26,7 +27,7 @@ void OpenExternalUrl(const char* url) {
 void OpenExternalUrl(const char* url) { (void)url; }
 #endif
 
-enum class Section { ApiSync = 0, CornerIcon, GlobalAppearance, Highlights, Colors, About };
+enum class Section { ApiSync = 0, CornerIcon, GlobalOptions, About };
 
 void RenderApiSync(AppState& state) {
     using namespace OptionsUiKit;
@@ -153,35 +154,10 @@ void RenderCornerIcon(AppState& state) {
                     &state.settings.keybindToggleDungeons);
 }
 
-void RenderGlobalAppearance(AppState& state) {
+void RenderGlobalOptions(AppState& state) {
     using namespace OptionsUiKit;
 
-    SectionHeading("Global Appearance");
-    SectionSubtext("These settings apply to all overlay panels.");
-
-    const char* layoutLabels[] = {"Vertical", "Horizontal"};
-    int layoutIndex = state.settings.panelLayout == PanelLayout::Horizontal ? 1 : 0;
-    if (SettingCombo("Panel layout", &layoutIndex, layoutLabels, 2,
-                     "Arrange encounter cells vertically or horizontally.")) {
-        state.settings.panelLayout =
-            layoutIndex == 1 ? PanelLayout::Horizontal : PanelLayout::Vertical;
-        if (state.settings.anchorStrikesToRaidPanel || state.settings.anchorFractalsToStrikesPanel) {
-            RealignAnchoredPanels(state);
-        }
-    }
-
-    const char* groupLabelLabels[] = {"Show", "Hidden"};
-    int groupLabelIndex = state.settings.groupLabelDisplay == GroupLabelDisplay::Hidden ? 1 : 0;
-    if (SettingCombo("Group label display", &groupLabelIndex, groupLabelLabels, 2,
-                     "Controls the category label column on overlay panels.\n"
-                     "Show: custom or default short names.\n"
-                     "Hidden: hide category labels and reclaim the space.")) {
-        state.settings.groupLabelDisplay =
-            groupLabelIndex == 1 ? GroupLabelDisplay::Hidden : GroupLabelDisplay::Abbreviation;
-        if (state.settings.anchorStrikesToRaidPanel || state.settings.anchorFractalsToStrikesPanel) {
-            RealignAnchoredPanels(state);
-        }
-    }
+    SectionHeading("Global Options");
 
     SettingCheckbox("Clamp panels to screen", &state.settings.screenClamp,
                     "Keeps overlay panels within the game window when dragged.");
@@ -189,71 +165,38 @@ void RenderGlobalAppearance(AppState& state) {
     SettingCheckbox("GW2 style background boxes", &state.settings.organicGridBoxBackgrounds,
                     "Cell backgrounds styled like GW2 watercolor brush strokes.");
 
-    SettingCheckbox("Enable mouse hover tooltips", &state.settings.enableTooltips,
-                    "Shows enhanced encounter tooltips with boss icons and mechanic indicators.");
+    if (SettingCheckbox("Enable mouse hover tooltips", &state.settings.globalEnableTooltips,
+                        "Shows enhanced encounter tooltips with boss icons and mechanic "
+                        "indicators. Overwrites per-panel tooltip settings.")) {
+        state.settings.ApplyGlobalTooltipsToAllPanels();
+    }
 
-    if (SettingSliderFloat("Panel scale", &state.settings.panelScale, 0.5f, 2.0f, "%.2f",
-                           "Scale all overlay panels.")) {
-        if (state.settings.anchorStrikesToRaidPanel || state.settings.anchorFractalsToStrikesPanel) {
+    ImGui::Spacing();
+    SectionHeading("Global Appearance");
+    WarningText(
+        "Changes here overwrite panel style on Raids, Strikes, Fractals, and Dungeons, including "
+        "any per-panel overrides.");
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextColored(GrayColor(),
+                       "Use each panel's Options and Style tab to customize a single panel.");
+    ImGui::PopTextWrapPos();
+
+    if (OptionsPanelAppearance::RenderFields(state.settings.globalAppearance, state.settings,
+                                             true)) {
+        state.settings.ApplyGlobalAppearanceToAllPanels();
+        if (state.settings.anchorStrikesToRaidPanel ||
+            state.settings.anchorFractalsToStrikesPanel) {
             RealignAnchoredPanels(state);
         }
     }
 
-    SettingSliderFloat("Label opacity", &state.settings.labelOpacity, 0.1f, 1.0f, "%.2f",
-                       "Opacity for wing and group label cells.");
-
-    SettingSliderFloat("Grid opacity", &state.settings.gridOpacity, 0.1f, 1.0f, "%.2f",
-                       "Opacity for encounter cells.");
-
-    SettingSliderFloat("Grid background opacity", &state.settings.panelBackgroundOpacity, 0.0f,
-                       1.0f, "%.2f", "Opacity for the panel background behind the grid.");
-
     ImGui::Spacing();
-    RenderGridPreview(state.settings);
-}
-
-void RenderHighlights(AppState& state) {
-    using namespace OptionsUiKit;
-
-    SectionHeading("Highlights");
-    SectionSubtext("Weekly and bounty highlight behavior. Colors are configured in the Colors section.");
-
-    if (SettingCheckbox("Highlight non-weekly bounty encounters",
-                        &state.settings.highlightNonWeeklyBounty,
-                        "Uncleared raid wing and raid encounter bosses that will not be daily "
-                        "bounties for the rest of the week are highlighted.")) {
-        std::lock_guard lock(state.dataMutex);
-        state.ApplyNonWeeklyHighlights();
-    }
-
-    if (SettingCheckbox("Omit event encounters from highlight", &state.settings.omitEventEncounters,
-                        "Excludes raid event encounters from non-weekly bounty highlighting.")) {
-        std::lock_guard lock(state.dataMutex);
-        state.ApplyNonWeeklyHighlights();
-    }
-
-    SettingCheckbox("Highlight Emboldened raid wing", &state.settings.highlightEmbolden,
-                    "Colors wing and encounter labels for the weekly Emboldened raid wing.");
-
-    SettingCheckbox("Highlight Call of the Mists raid wing", &state.settings.highlightCotm,
-                    "Colors wing and encounter labels for the weekly Call of the Mists raid wing.");
-}
-
-void RenderColors(AppState& state) {
-    using namespace OptionsUiKit;
-
     SectionHeading("Clear State Colors");
     SettingColorRgb("Label text color", state.settings.colorText,
                     "Default color for wing and encounter label text.");
     SettingColorRgb("Cleared color", state.settings.colorCleared);
     SettingColorRgb("Not cleared color", state.settings.colorNotCleared);
     SettingColorRgb("Unknown color", state.settings.colorUnknown);
-
-    SectionHeading("Highlight Colors");
-    SettingColorRgb("Non-weekly bounty color", state.settings.colorNonWeeklyBounty,
-                    "Color for encounters highlighted as non-weekly bounties.");
-    SettingColorRgb("Emboldened text color", state.settings.colorEmbolden);
-    SettingColorRgb("Call of the Mists text color", state.settings.colorCotm);
 }
 
 void RenderAbout() {
@@ -306,10 +249,9 @@ void RenderAbout() {
 void Render(AppState& state, int& section) {
     using namespace OptionsUiKit;
 
-    static const char* kSections[] = {"API & Sync", "Corner Icon", "Global Appearance",
-                                      "Highlights", "Colors", "About"};
+    static const char* kSections[] = {"API & Sync", "Corner Icon", "Global Options", "About"};
 
-    BeginTabPage(section, kSections, 6);
+    BeginTabPage(section, kSections, 4);
     ImGui::PushID("general");
     BeginContentPanel(nullptr);
 
@@ -320,14 +262,8 @@ void Render(AppState& state, int& section) {
         case Section::CornerIcon:
             RenderCornerIcon(state);
             break;
-        case Section::GlobalAppearance:
-            RenderGlobalAppearance(state);
-            break;
-        case Section::Highlights:
-            RenderHighlights(state);
-            break;
-        case Section::Colors:
-            RenderColors(state);
+        case Section::GlobalOptions:
+            RenderGlobalOptions(state);
             break;
         case Section::About:
             RenderAbout();

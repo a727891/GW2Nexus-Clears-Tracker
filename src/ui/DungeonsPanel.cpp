@@ -33,14 +33,15 @@ std::vector<GridGroup> FilterDungeonGroups(const std::vector<GridGroup>& groups,
 void Render(AppState& state) {
     if (!state.ShouldShowPanel(state.settings.dungeonsPanel.visible)) return;
 
+    const auto& appearance = state.settings.Appearance(PanelKind::Dungeons);
     std::vector<GridGroup> visibleGroups;
     ImVec2 contentSize;
     {
         std::lock_guard lock(state.dataMutex);
         visibleGroups = FilterDungeonGroups(state.dungeonGroups, state.settings);
         contentSize = GridLayout::ComputePlacement(
-                            visibleGroups, state.settings.panelLayout, state.settings.panelScale,
-                            state.settings.groupLabelDisplay)
+                            visibleGroups, appearance.panelLayout, appearance.panelScale,
+                            appearance.groupLabelDisplay)
                             .contentSize;
     }
 
@@ -54,7 +55,9 @@ void Render(AppState& state) {
     GridDrawContext context{.raidData = &state.raidData,
                             .strikeData = &state.strikeData,
                             .mentorProgress = &state.mentorProgress};
-    GridRenderer::DrawGroups(visibleGroups, state.settings, true, true, font, context, true);
+    GridRenderer::DrawGroups(visibleGroups, state.settings, appearance,
+                             state.settings.dungeonsEnableTooltips, true, true, font, context,
+                             true);
     const uint32_t screenW = state.nexusLink ? state.nexusLink->Width : 0;
     const uint32_t screenH = state.nexusLink ? state.nexusLink->Height : 0;
     OverlayPanel::End(OverlayPanel::PanelRole::Dungeons, state.settings.screenClamp, screenW,
