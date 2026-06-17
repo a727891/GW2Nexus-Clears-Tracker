@@ -1,5 +1,5 @@
 ### =============================================================================
-### GW2 API — NexusRaidClears registration tests
+### GW2 API - NexusRaidClears registration tests
 ### VS Code extension: humao.rest-client (REST Client)
 ### https://marketplace.visualstudio.com/items?itemName=humao.rest-client
 ###
@@ -28,7 +28,7 @@
 
 
 ### =============================================================================
-### Registration step 1 — Validate token / read permissions
+### Registration step 1 - Validate token / read permissions
 ### GET /v2/tokeninfo
 ###
 ### Success: 200
@@ -43,7 +43,7 @@ Accept: application/json
 
 
 ### =============================================================================
-### Registration step 2 — Fetch account name
+### Registration step 2 - Fetch account name
 ### GET /v2/account
 ###
 ### Success: 200
@@ -58,7 +58,7 @@ Accept: application/json
 
 
 ### =============================================================================
-### Registration step 3 — Fetch character names (CORRECT endpoint)
+### Registration step 3 - Fetch character names (CORRECT endpoint)
 ### GET /v2/characters
 ###
 ### Success: 200
@@ -75,14 +75,14 @@ Accept: application/json
 
 
 ### =============================================================================
-### Registration step 3 (alternate) — Full character objects
+### Registration step 3 (alternate) - Full character objects
 ### GET /v2/characters?ids=all
 ###
 ### Success: 200
 ### Body: JSON array of objects; each object has a "name" field (plus race, level, etc.)
 ### Requires permission: characters
 ###
-### NOT what the addon parses today — included for comparison/debugging only.
+### NOT what the addon parses today - included for comparison/debugging only.
 ### =============================================================================
 
 # @name charactersAll
@@ -109,7 +109,7 @@ Accept: application/json
 
 
 ### =============================================================================
-### Optional — test secondary API key (duplicate registration flow)
+### Optional - test secondary API key (duplicate registration flow)
 ### Set @activeApiKey = {{apiKeySecondary}} at the top, or override locally:
 ### =============================================================================
 

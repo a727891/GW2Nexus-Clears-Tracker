@@ -2,16 +2,16 @@
 
 Nexus addon port of the [BlishHUD Clears Tracker](https://github.com/a727891/BlishHud-Raid-Clears) module.
 
-Track daily and weekly PvE clears — raids, strikes, fractals, and dungeons — in overlay panels backed by the Guild Wars 2 API.
+Track daily and weekly PvE clears - raids, strikes, fractals, and dungeons - in overlay panels backed by the Guild Wars 2 API.
 
 ## Features
 
-- **Raids** — wing/encounter grid from `/v2/account/raids`; daily raid bounty rows; mentor progress tooltips and popups
-- **Strikes** — weekly clears from achievement 9125; daily bounty and tomorrow rows; map-tracked daily strikes (e.g. Dragonstorm)
-- **Fractals** — recommended and daily tiers, CM selection, instability tooltips
-- **Dungeons** — path clear status from `/v2/account/dungeons`
-- **Customization** — layout, colors, labels, per-encounter visibility, screen clamp, stylized grid boxes
-- **Quick access** — corner icon and `CLRTRK_TOGGLE_PANELS` keybind (default `ALT+SHIFT+R`)
+- **Raids** - wing/encounter grid from `/v2/account/raids`; daily raid bounty rows; mentor progress tooltips and popups
+- **Strikes** - weekly clears from achievement 9125; daily bounty and tomorrow rows; map-tracked daily strikes (e.g. Dragonstorm)
+- **Fractals** - recommended and daily tiers, CM selection, instability tooltips
+- **Dungeons** - path clear status from `/v2/account/dungeons`
+- **Customization** - layout, colors, labels, per-encounter visibility, screen clamp, stylized grid boxes
+- **Quick access** - corner icon and `CLRTRK_TOGGLE_PANELS` keybind (default `ALT+SHIFT+R`)
 
 ## Requirements
 
@@ -56,7 +56,7 @@ Output: `build/NexusRaidClears.dll`
 
 ```bash
 ./scripts/deploy-to-gw2.sh           # DLL + static JSON + corner icon textures
-./scripts/deploy-to-gw2.sh --ftue    # DLL only — test first-load downloads
+./scripts/deploy-to-gw2.sh --ftue    # DLL only - test first-load downloads
 ```
 
 Grid box masks are downloaded at runtime from the static host (not pre-seeded by
@@ -76,7 +76,7 @@ only import Windows system libraries:
 x86_64-w64-mingw32-objdump -p build/NexusRaidClears.dll | rg "DLL Name"
 ```
 
-Expect `KERNEL32.dll`, `USER32.dll`, `WS2_32.dll`, `msvcrt.dll` — **not**
+Expect `KERNEL32.dll`, `USER32.dll`, `WS2_32.dll`, `msvcrt.dll` - **not**
 `libstdc++-6.dll`, `libgcc_s_seh-1.dll`, or `libwinpthread-1.dll`.
 
 Also confirm:
@@ -101,14 +101,14 @@ Also confirm:
 
 ## Static data
 
-Encounter layout and metadata are fetched from freesnow's Blish static host:
+Encounter layout and metadata are fetched from Freesnöw's Blish static host:
 
 `https://bhm.blishhud.com/Soeed.RaidClears/static/v2/`
 
 Icons may be loaded from `https://assets.gw2dat.com/`. Both hosts receive an
 identifiable `User-Agent: ClearsTracker-Nexus/<version>`.
 
-To add or update encounters, see **[CONTRIBUTING.md](CONTRIBUTING.md)** — most
+To add or update encounters, see **[CONTRIBUTING.md](CONTRIBUTING.md)** - most
 changes are JSON-only in the static-data branch; dungeons require a code change.
 
 ## Contributing
@@ -123,10 +123,10 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits
 
-- **Soeed** — Clears Tracker (BlishHUD) and this Nexus port
-- **Abbadon** — BlishHUD contributor
-- **freesnow** — static data and icon hosting (`bhm.blishhud.com`, `assets.gw2dat.com`)
-- **Raidcore** — Nexus addon platform
+- **Soeed** - Clears Tracker (BlishHUD) and this Nexus port
+- **Abbadon** - BlishHUD contributor
+- **Freesnöw** - static data and icon hosting (`bhm.blishhud.com`, `assets.gw2dat.com`)
+- **Raidcore** - Nexus addon platform
 
 Inspired by the raid feature in Gw2TaCO.
 
@@ -139,4 +139,4 @@ Inspired by the raid feature in Gw2TaCO.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Nexus API headers: Raidcore.GG MIT license.
+MIT - see [LICENSE](LICENSE). Nexus API headers: Raidcore.GG MIT license.

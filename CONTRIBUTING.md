@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping maintain **Clears Tracker** for Nexus. This addon is a port of the [BlishHUD Clears Tracker](https://github.com/a727891/BlishHud-Raid-Clears) module. Most encounter data is shared between both clients via static JSON hosted by freesnow.
+Thanks for helping maintain **Clears Tracker** for Nexus. This addon is a port of the [BlishHUD Clears Tracker](https://github.com/a727891/BlishHud-Raid-Clears) module. Most encounter data is shared between both clients via static JSON hosted by Freesnöw.
 
 ## Development setup
 
@@ -50,7 +50,7 @@ first-load downloads. See [README.md](README.md) for details.
 
 Most content updates **do not require a Nexus code change**. Raids, strikes,
 fractals, daily bounties, and instability metadata are loaded from static JSON
-at runtime. Dungeons are the main exception — they are hardcoded in C++.
+at runtime. Dungeons are the main exception - they are hardcoded in C++.
 
 ### Repositories involved
 
@@ -88,9 +88,9 @@ Edit these under `static/v2/` in the static-data branch/repo.
 | New strike | Yes | Map-tracked strikes need `mapIds` + `MapWatcherService` support (already generic) |
 | Daily bounty rotation | Yes (`daily_bounties.json` + encounter IDs in `raid_data.json`) | No |
 | New fractal | Yes | No |
-| New dungeon path | **No** — edit `src/data/DungeonData.cpp` | Yes |
+| New dungeon path | **No** - edit `src/data/DungeonData.cpp` | Yes |
 | New tooltip field | Maybe | If parser/UI does not already handle the field |
-| New clear source (e.g. new achievement) | Maybe | Yes — new service logic in Blish + port to Nexus |
+| New clear source (e.g. new achievement) | Maybe | Yes - new service logic in Blish + port to Nexus |
 
 **Rule of thumb:** update static data first and test in BlishHUD. If Blish works
 with JSON alone, Nexus usually picks it up on the next static refresh with no
@@ -100,43 +100,43 @@ DLL rebuild.
 
 ### Adding a new raid encounter
 
-1. **Find the API id** — check [GW2 API `/v2/raids`](https://api.guildwars2.com/v2/raids) or existing entries in `raid_data.json`. The `api_id` must match what `/v2/account/raids` returns.
+1. **Find the API id** - check [GW2 API `/v2/raids`](https://api.guildwars2.com/v2/raids) or existing entries in `raid_data.json`. The `api_id` must match what `/v2/account/raids` returns.
 
-2. **Edit `raid_data.json`** — add an encounter object under the correct wing in `expansions[].wings[].encounters`:
+2. **Edit `raid_data.json`** - add an encounter object under the correct wing in `expansions[].wings[].encounters`:
 
-   - `name`, `api_id`, `abbriviation` (sic — matches Blish schema)
-   - `assetId` — GW2 dat icon id (tooltips / optional display)
-   - `powerFavored`, `condiFavored`, `needsDefianceBreak` — tooltip flags
-   - `mentor_achievement_id` / `mentor_achievement_max` — if the boss has a mentor achievement
-   - `daily_bounty_achievement_id` — if the boss can appear as a daily raid bounty
+   - `name`, `api_id`, `abbriviation` (sic - matches Blish schema)
+   - `assetId` - GW2 dat icon id (tooltips / optional display)
+   - `powerFavored`, `condiFavored`, `needsDefianceBreak` - tooltip flags
+   - `mentor_achievement_id` / `mentor_achievement_max` - if the boss has a mentor achievement
+   - `daily_bounty_achievement_id` - if the boss can appear as a daily raid bounty
 
 3. **Bump `version`** at the top of `raid_data.json` (ISO timestamp).
 
-4. **Update `clears_tracker.json`** — set `"raid_data"` to the same version string.
+4. **Update `clears_tracker.json`** - set `"raid_data"` to the same version string.
 
-5. **If bounty-eligible** — ensure the `api_id` appears in the appropriate `bossSlots` in `daily_bounties.json`.
+5. **If bounty-eligible** - ensure the `api_id` appears in the appropriate `bossSlots` in `daily_bounties.json`.
 
 6. **Publish** static branch to hosting (see [Publishing static updates](#publishing-static-updates)).
 
-7. **Verify** — refresh API in-game; new encounter should appear uncleared/cleared based on `/v2/account/raids`. Check mentor tooltip and non-weekly bounty highlight if applicable.
+7. **Verify** - refresh API in-game; new encounter should appear uncleared/cleared based on `/v2/account/raids`. Check mentor tooltip and non-weekly bounty highlight if applicable.
 
 ---
 
 ### Adding a new strike
 
-1. **Edit `strike_data.json`** — add a mission under the right `expansions[].missions` entry:
+1. **Edit `strike_data.json`** - add a mission under the right `expansions[].missions` entry:
 
-   - `id` — stable string key used in settings and persistence
+   - `id` - stable string key used in settings and persistence
    - `name`, `abbriviation`, `assetId`, `mapIds`
-   - `resets` — `"weekly"` (default) or `"daily"` for daily-reward strikes
+   - `resets` - `"weekly"` (default) or `"daily"` for daily-reward strikes
 
-2. **Weekly API-tracked strikes** — if the strike is part of achievement **9125** (Weekly Raid Encounters), append its `id` to `weekly_achievement_bit_strike_ids` **in bit order**. Index `i` in that array maps to bit `i` on the achievement.
+2. **Weekly API-tracked strikes** - if the strike is part of achievement **9125** (Weekly Raid Encounters), append its `id` to `weekly_achievement_bit_strike_ids` **in bit order**. Index `i` in that array maps to bit `i` on the achievement.
 
-3. **Map-tracked strikes** (e.g. Dragonstorm) — add the `id` to `map_tracked_strike_ids`, set `"resets": "daily"`, and include the strike's `mapIds`. Clears are recorded on map leave, not from the API.
+3. **Map-tracked strikes** (e.g. Dragonstorm) - add the `id` to `map_tracked_strike_ids`, set `"resets": "daily"`, and include the strike's `mapIds`. Clears are recorded on map leave, not from the API.
 
 4. **Bump `version`** in `strike_data.json` and update `clears_tracker.json` → `"strike_data"`.
 
-5. **Publish and verify** — weekly strikes should sync from achievement 9125 on API refresh; map-tracked strikes should clear when leaving the map.
+5. **Publish and verify** - weekly strikes should sync from achievement 9125 on API refresh; map-tracked strikes should clear when leaving the map.
 
 ---
 
@@ -164,14 +164,14 @@ When ArenaNet changes the bounty pool or slot layout:
    - Update `DailyTier` and/or `Recs` tables when daily/recommended rotations change.
    - Update `challengeMotes` if CM scale list changes.
 
-2. **Instabilities** — if new instability names or icons are needed, edit
+2. **Instabilities** - if new instability names or icons are needed, edit
    `fractal_instabilities.json` and bump its version reference in
    `clears_tracker.json` → `"fractal_instabilities"`.
 
 3. **Bump** `fractal_maps.json` version (via `clears_tracker.json` →
    `"fractal_map_data"`).
 
-4. **Publish and verify** — fractal panel daily/rec rows and CM tooltips should
+4. **Publish and verify** - fractal panel daily/rec rows and CM tooltips should
    reflect the new data after refresh.
 
 ---
@@ -192,12 +192,12 @@ When a new path is added (rare):
 ### Publishing static updates
 
 1. Commit changes on the `bhud-static/Soeed.RaidClears` branch under `static/v2/`.
-2. Deploy to `bhm.blishhud.com` (freesnow's hosting — coordinate with him if you do not publish yourself).
+2. Deploy to `bhm.blishhud.com` (Freesnöw's hosting - coordinate with him if you do not publish yourself).
 3. If `clears_tracker.json` lists new textures in `assets`, upload those PNGs too.
 4. Users with cached files get updates on **Refresh API** / addon reload when the hosted version changes. For local dev, copy updated JSON into `addons/NexusRaidClears/clearsTracker/`.
 
 `clears_tracker.json` also carries `motd` / `motd_id` for the corner-icon message
-and `cache_bust` for asset invalidation — update when you want users to notice a
+and `cache_bust` for asset invalidation - update when you want users to notice a
 release.
 
 ---
@@ -221,7 +221,7 @@ Use this when static data alone is not enough, or when shipping a Nexus-specific
 When the Blish module gains a feature or fix:
 
 1. Find the equivalent area in this repo (`src/services/`, `src/ui/`, `src/data/`).
-2. Port logic — Nexus uses ImGui + Nexus API instead of Blish HUD controls, but
+2. Port logic - Nexus uses ImGui + Nexus API instead of Blish HUD controls, but
    GW2 API and static JSON layers should stay parallel.
 3. If Blish changed static schema, update parsers in `src/data/*.cpp` only if
    new fields are required in the UI or services.
@@ -238,13 +238,13 @@ Useful Blish references:
 ### API permissions and test tokens
 
 The addon requires a GW2 API key with **`account`** and **`progression`**
-permissions. Use `gw2.http` (local REST client file) for manual API probing —
+permissions. Use `gw2.http` (local REST client file) for manual API probing -
 never commit real tokens.
 
 ---
 
 ## Questions
 
-- **Blish / static hosting:** freesnow (BlishHUD infrastructure)
+- **Blish / static hosting:** Freesnöw (BlishHUD infrastructure)
 - **Module logic / GW2 data:** open an issue or PR on the relevant repo
 - **Nexus runtime:** [Raidcore Nexus](https://raidcore.gg/gw2/nexus)

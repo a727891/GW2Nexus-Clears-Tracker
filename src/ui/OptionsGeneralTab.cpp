@@ -276,8 +276,8 @@ void RenderAbout() {
 
     SectionHeading("Credits");
     SectionSubtext("Developers");
-    ImGui::BulletText("Soeed — primary developer");
-    ImGui::BulletText("Abbadon — contributor");
+    ImGui::BulletText("Soeed - primary developer");
+    ImGui::BulletText("Abbadon - contributor");
 
     ImGui::Spacing();
     SectionSubtext("Thank you to:");
