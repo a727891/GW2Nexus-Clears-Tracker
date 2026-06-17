@@ -29,35 +29,41 @@ void RenderNexusConfigEntry(AppState& state) {
     ImGui::Spacing();
     ImGui::TextWrapped("%s", kDescription);
     ImGui::Spacing();
-    ImGui::TextWrapped("Register a GW2 API key to start tracking clears.");
-    ImGui::Spacing();
 
-    static char apiKeyBuf[128] = {};
-    const bool registering = state.accountRegistry.IsRegistering();
+    if (!state.accountRegistry.HasActiveAccount()) {
+        ImGui::TextWrapped("Register a GW2 API key to start tracking clears.");
+        ImGui::Spacing();
 
-    ImGui::InputText("GW2 API Key", apiKeyBuf, sizeof(apiKeyBuf), ImGuiInputTextFlags_Password);
-    if (!registering && ImGui::Button("Register Key")) {
-        if (apiKeyBuf[0] != '\0') {
-            state.RegisterApiKey(apiKeyBuf);
-            apiKeyBuf[0] = '\0';
-            SettingsWindow::Open(SettingsTab::General, SettingsWindow::kGeneralSectionApiSync);
+        static char apiKeyBuf[128] = {};
+        const bool registering = state.accountRegistry.IsRegistering();
+
+        ImGui::InputText("GW2 API Key", apiKeyBuf, sizeof(apiKeyBuf), ImGuiInputTextFlags_Password);
+        if (!registering && ImGui::Button("Register Key")) {
+            if (apiKeyBuf[0] != '\0') {
+                state.RegisterApiKey(apiKeyBuf);
+                apiKeyBuf[0] = '\0';
+                SettingsWindow::Open(SettingsTab::General, SettingsWindow::kGeneralSectionApiSync);
+            }
         }
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-        ImGui::SetTooltip(
-            "Validates the key against the GW2 API and stores account name, key name, and "
-            "characters. Requires account, progression, and characters permissions.");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::SetTooltip(
+                "Validates the key against the GW2 API and stores account name, key name, and "
+                "characters. Requires account, progression, and characters permissions.");
+        }
+
+        const auto status = state.accountRegistry.LastRegistrationMessage();
+        if (!status.empty()) {
+            ImGui::TextWrapped("%s", status.c_str());
+        }
+        if (registering) {
+            ImGui::TextDisabled("Registering API key...");
+        }
+
+        ImGui::Spacing();
+    } else {
+        ImGui::TextWrapped("Active account: %s", state.accountRegistry.ActiveAccountName().value_or("").c_str());
     }
 
-    const auto status = state.accountRegistry.LastRegistrationMessage();
-    if (!status.empty()) {
-        ImGui::TextWrapped("%s", status.c_str());
-    }
-    if (registering) {
-        ImGui::TextDisabled("Registering API key...");
-    }
-
-    ImGui::Spacing();
     ImGui::Spacing();
 
     const ImVec2 buttonSize(ImGui::GetContentRegionAvail().x, 52.0f);
