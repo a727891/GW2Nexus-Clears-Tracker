@@ -120,7 +120,7 @@ void RenderRaidLabels(AppState& state) {
     std::lock_guard lock(state.dataMutex);
 
     SectionHeading("Customize Raid Labels");
-    SectionSubtext("Change the short labels shown on the raid panel. Labels are saved per account.");
+    SectionSubtext("Change the short labels shown on the raid panel.");
 
     const ImVec4 gold = GoldColor();
     const ImVec4 gray = GrayColor();
@@ -151,9 +151,7 @@ void RenderStrikeLabels(AppState& state) {
     std::lock_guard lock(state.dataMutex);
 
     SectionHeading("Customize Raid Encounter Labels");
-    SectionSubtext(
-        "Change the short labels shown on the raid encounters panel. Labels are saved per "
-        "account.");
+    SectionSubtext("Change the short labels shown on the raid encounters panel.");
 
     const ImVec4 gold = GoldColor();
     const ImVec4 white = WhiteColor();
@@ -205,8 +203,7 @@ void RenderFractalLabels(AppState& state) {
     std::lock_guard lock(state.dataMutex);
 
     SectionHeading("Customize Fractal Labels");
-    SectionSubtext(
-        "Change the short labels shown on the fractals panel. Labels are saved per account.");
+    SectionSubtext("Change the short labels shown on the fractals panel.");
 
     const ImVec4 gold = GoldColor();
     const ImVec4 white = WhiteColor();
