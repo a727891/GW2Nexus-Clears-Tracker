@@ -219,7 +219,7 @@ void RenderAbout() {
 
     SectionHeading("Credits");
     SectionSubtext("Developers");
-    ImGui::BulletText("Soeed");
+    ImGui::BulletText("%s", kAuthor);
 
     ImGui::Spacing();
     SectionSubtext("Thank you to:");
